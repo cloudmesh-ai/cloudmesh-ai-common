@@ -1,2 +1,1 @@
-# cloudmesh-common
-Common libraries
+# Cloudmesh AI Common

@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cloudmesh-ai-common"
+version = "0.1.0"
+description = "Common utilities for Cloudmesh AI"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["cloudmesh.ai.common*"]
