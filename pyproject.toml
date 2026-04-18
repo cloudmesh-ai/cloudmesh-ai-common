@@ -1,20 +1,54 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "cloudmesh-ai-common"
-version = "0.1.0"
-description = "Common utilities for Cloudmesh AI"
-readme = "README.md"
-requires-python = ">=3.10"
+dynamic = ["version"]
+description = "CMC: Cloudmesh Command for AI"
+license = {text = "Apache-2.0"}
+keywords = ["cmc", "extension", "cli", "click", "cloudmesh"]
 dependencies = [
-    "tzlocal>=5.0",
-    "humanize>=4.0",
-    "psutil>=5.9.0",
-    "cloudmesh-common>=4.0.0",
+    "click",
+    "rich",
+    "shellingham",
+    "psutil",
+    "PyYAML",
+    "humanize",
+    "tzlocal",
 ]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pip-tools",
+    "twine",
+    "ruff",
+    "mypy",
+]
+
+[tool.setuptools.dynamic]
+version = {file = ["VERSION"]}
+
+[tool.setuptools]
+# Tells setuptools to look inside the 'src' directory for packages
+package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["cloudmesh.ai.common*"]
+include = ["cloudmesh*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = false
+ignore_missing_imports = true
+warn_return_any = true
+warn_unused_configs = true
