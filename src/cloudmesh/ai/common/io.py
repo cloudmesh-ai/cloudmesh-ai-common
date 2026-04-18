@@ -1,18 +1,22 @@
+"""
+I/O utility functions for cloudmesh-ai.
+Provides helpers for path expansion, YAML handling, and benchmark file creation.
+"""
+
 import os
 import yaml
 from pathlib import Path
 from typing import Any, Dict, Optional
 
 def path_expand(text: str, slashreplace: bool = True) -> str:
-    """
-    Expands a path string by resolving '~', environment variables, and relative links.
+    """Expands a path string by resolving '~', environment variables, and relative links.
 
     Args:
-        text (str): The path to be expanded (e.g., "~/$PROJECT/./file.txt").
-        slashreplace (bool): If True, returns backslashes on Windows. Defaults to True.
+        text: The path to be expanded (e.g., "~/$PROJECT/./file.txt").
+        slashreplace: If True, returns backslashes on Windows. Defaults to True.
 
     Returns:
-        str: The fully expanded and absolute path.
+        The fully expanded and absolute path.
     """
     if not text:
         return ""
@@ -33,7 +37,15 @@ def path_expand(text: str, slashreplace: bool = True) -> str:
     return path_obj.as_posix()
 
 def load_yaml(path: Path) -> Optional[Dict[str, Any]]:
-    """Safely loads a YAML file from the given path."""
+    """Safely loads a YAML file from the given path.
+
+    Args:
+        path: Path to the YAML file.
+
+    Returns:
+        The loaded YAML data as a dictionary, or None if the file does not exist 
+        or an error occurs.
+    """
     try:
         if not path.exists():
             return None
@@ -43,13 +55,25 @@ def load_yaml(path: Path) -> Optional[Dict[str, Any]]:
         return None
 
 def dump_yaml(path: Path, data: Dict[str, Any]) -> None:
-    """Safely writes a dictionary to a YAML file, ensuring the directory exists."""
+    """Safely writes a dictionary to a YAML file, ensuring the directory exists.
+
+    Args:
+        path: Path where the YAML file should be written.
+        data: The dictionary to write to the file.
+
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, 'w') as f:
         yaml.dump(data, f, default_flow_style=False)
 
 def create_benchmark_yaml(path: str, n: int) -> None:
-    """Creates a Cloudmesh service YAML test file with specified number of services."""
+    """Creates a Cloudmesh service YAML test file with specified number of services.
+
+    Args:
+        path: Path where the benchmark YAML file should be created.
+        n: Number of services to include in the benchmark file.
+
+    """
     cm = {"cloudmesh": {}}
     for i in range(0, n):
         cm["cloudmesh"][f"service{i}"] = {"attribute": f"service{i}"}
@@ -59,7 +83,15 @@ def create_benchmark_yaml(path: str, n: int) -> None:
         yaml.dump(cm, yaml_file, default_flow_style=False)
 
 def create_benchmark_file(path: str, n: int) -> int:
-    """Creates a file of a given size in binary megabytes and returns the size in megabytes."""
+    """Creates a file of a given size in binary megabytes.
+
+    Args:
+        path: Path where the benchmark file should be created.
+        n: Size of the file in megabytes.
+
+    Returns:
+        The actual size of the created file in megabytes.
+    """
     location = path_expand(path)
     size = 1048576 * n  # size in bytes
     with open(location, "wb") as f:

@@ -18,22 +18,46 @@ from typing import Dict, Optional, Any, Union
 _thread_local = threading.local()
 
 def set_context_id(context_id: str):
-    """Sets the context ID for the current thread to enable request tracing."""
+    """Sets the context ID for the current thread to enable request tracing.
+
+    Args:
+        context_id: The unique identifier for the current request or context.
+    """
     _thread_local.context_id = context_id
 
 def get_context_id() -> Optional[str]:
-    """Retrieves the context ID for the current thread."""
+    """Retrieves the context ID for the current thread.
+
+    Returns:
+        The current context ID if set, otherwise None.
+    """
     return getattr(_thread_local, "context_id", None)
 
 class ContextFilter(logging.Filter):
     """Filter that injects the current context_id into the log record."""
     def filter(self, record: logging.LogRecord) -> bool:
+        """Injects the current context_id into the log record.
+
+        Args:
+            record: The log record to be filtered.
+
+        Returns:
+            True to indicate the record should be logged.
+        """
         record.context_id = get_context_id() or "system"
         return True
 
 class JsonFormatter(logging.Formatter):
     """Formatter that outputs log records in JSON format."""
     def format(self, record: logging.LogRecord) -> str:
+        """Formats the log record as a JSON string.
+
+        Args:
+            record: The log record to format.
+
+        Returns:
+            A JSON string representation of the log record.
+        """
         log_record = {
             "timestamp": self.formatTime(record, self.datefmt),
             "level": record.levelname,
@@ -51,35 +75,57 @@ _loggers: Dict[str, logging.Logger] = {}
 # Global logging configuration
 _logging_config: Dict[str, Any] = {}
 
-def load_logging_config(config_path: Union[str, Path]):
-    """
-    Loads logging configuration from a JSON file.
+def load_logging_config(config_path: Union[str, Path]) -> None:
+    """Loads logging configuration from a JSON file.
+
     Example config: {"log_dir": "/var/log/cloudmesh", "level": "DEBUG", "json_format": true}
+
+    Args:
+        config_path: Path to the JSON configuration file.
+
     """
     global _logging_config
     try:
-        path = Path(config_path)
+        path = Path(config_path).expanduser()
         if path.exists():
             with open(path, "r") as f:
                 _logging_config = json.load(f)
     except Exception as e:
+        # Use print here because logger might not be configured yet
         print(f"Failed to load logging config from {config_path}: {e}")
 
+# Automatically load default config on import
+load_logging_config("~/.config/cloudmesh/ai/config.json")
+
 def get_log_dir() -> Path:
-    """Returns the expanded path to the AI logs directory, using config if available."""
+    """Returns the expanded path to the AI logs directory, using config if available.
+
+    Returns:
+        The Path object pointing to the logs directory.
+    """
     log_dir = _logging_config.get("log_dir", "~/.config/cloudmesh/ai/logs")
     return Path(log_dir).expanduser()
 
 def ensure_log_dir() -> Path:
-    """Ensures the log directory exists and returns it."""
+    """Ensures the log directory exists and returns it.
+
+    Returns:
+        The Path object pointing to the ensured logs directory.
+    """
     log_dir = get_log_dir()
     log_dir.mkdir(parents=True, exist_ok=True)
     return log_dir
 
 def get_log_file_path(script_name: str) -> Path:
-    """
-    Generates a timestamped log file path for a given script.
+    """Generates a timestamped log file path for a given script.
+
     Example: ~/.config/cloudmesh/ai/logs/test_20260412_124500.log
+
+    Args:
+        script_name: The name of the script for which to generate the log path.
+
+    Returns:
+        The Path object pointing to the generated log file.
     """
     log_dir = ensure_log_dir()
     
@@ -95,8 +141,8 @@ def get_logger(
     max_bytes: Optional[int] = None,
     backup_count: Optional[int] = None
 ) -> logging.Logger:
-    """
-    Returns a configured logger instance for the given script.
+    """Returns a configured logger instance for the given script.
+
     Configures both a rotating file handler and a stream handler.
     
     Args:
@@ -105,6 +151,9 @@ def get_logger(
         json_format: If True, uses JSON formatting for logs.
         max_bytes: Max size of a log file before rotation.
         backup_count: Number of backup log files to keep.
+
+    Returns:
+        A configured logging.Logger instance.
     """
     if script_name in _loggers:
         return _loggers[script_name]
@@ -162,7 +211,21 @@ def progress(
     **kwargs,
 ) -> str:
     """Creates a printed line of the form
-    "# cloudmesh status=ready progress=0 pid=$$ time='2022-08-05 16:29:40.228901'"
+    "# cloudmesh status=ready progress=0 pid=$$ time='2022-08-05 16:29:40.228901'".
+
+    Args:
+        filename: Optional file to append the progress line to.
+        status: The current status string.
+        progress: The current progress value (int, float, or string).
+        pid: Process ID. If None, it will be automatically detected.
+        timestamp: If True, includes a timestamp in the output.
+        stdout: If True, prints to stdout.
+        stderr: If True, prints to stderr.
+        append: Optional string to append to the end of the line.
+        **kwargs: Additional key-value pairs to include in the progress line.
+
+    Returns:
+        The formatted progress string.
     """
     if isinstance(progress, (int, float)):
         progress = str(progress)

@@ -14,14 +14,28 @@ from typing import Union, Optional, Dict, List, Any, Generator
 from cloudmesh.ai.common import sys as ai_sys
 
 def rename(newname):
-    """decorator to rename a function"""
+    """Decorator to rename a function.
+
+    Args:
+        newname: The new name to assign to the function.
+
+    Returns:
+        A decorator function.
+    """
     def decorator(f):
         f.__name__ = newname
         return f
     return decorator
 
 def benchmark(func):
-    """decorator to benchmark a function"""
+    """Decorator to benchmark a function.
+
+    Args:
+        func: The function to be benchmarked.
+
+    Returns:
+        A wrapper function that starts and stops a StopWatch timer.
+    """
     @rename(func.__name__)
     def wrapper(*args, **kwargs):
         StopWatch.start(func.__name__)
@@ -39,7 +53,11 @@ class StopWatch:
 
     @classmethod
     def _get_local(cls):
-        """Ensures thread-local storage is initialized for the current thread."""
+        """Ensures thread-local storage is initialized for the current thread.
+
+        Returns:
+            The thread-local storage object.
+        """
         if not hasattr(cls._local, "timer_start"):
             cls._local.timer_start = {}
             cls._local.timer_end = {}
@@ -52,7 +70,11 @@ class StopWatch:
 
     @classmethod
     def debug_mode(cls, value: bool = True):
-        """Enables or disables debug mode for timers."""
+        """Enables or disables debug mode for timers.
+
+        Args:
+            value: True to enable debug mode, False to disable it. Defaults to True.
+        """
         cls.debug = value
         if value:
             print("StopWatch: Debug mode enabled.")
@@ -61,7 +83,15 @@ class StopWatch:
 
     @classmethod
     def _get_caller_name(cls, with_class: bool = True) -> str:
-        """Retrieves the name of the calling method."""
+        """Retrieves the name of the calling method.
+
+        Args:
+            with_class: If True, includes the class name in the returned string. 
+                Defaults to True.
+
+        Returns:
+            The name of the calling method.
+        """
         # frame[0] is this method, frame[1] is the caller of this method, 
         # frame[2] is the caller of the StopWatch method (Start/Stop/etc)
         frame = inspect.getouterframes(inspect.currentframe())
@@ -80,6 +110,10 @@ class StopWatch:
         Example:
             with StopWatch.timer("my_operation"):
                 do_work()
+
+        Args:
+            name: The name of the timer. If None, it is automatically detected.
+            values: Optional values to associate with the timer.
         """
         cls.start(name, values=values)
         try:
@@ -88,29 +122,56 @@ class StopWatch:
             cls.stop(name)
     @classmethod
     def keys(cls) -> List[str]:
-        """returns the names of the timers"""
+        """Returns the names of the timers.
+
+        Returns:
+            A list of timer names.
+        """
         return list(cls._get_local().timer_end.keys())
 
     @classmethod
     def status(cls, name: str, value: Any):
-        """records a status for the timer"""
+        """Records a status for the timer.
+
+        Args:
+            name: The name of the timer.
+            value: The status value to record.
+        """
         if cls.debug:
             print(f"Timer {name} status {value}")
         cls._get_local().timer_status[name] = value
 
     @classmethod
     def get_message(cls, name: str) -> Optional[str]:
-        """returns the message of the timer"""
+        """Returns the message of the timer.
+
+        Args:
+            name: The name of the timer.
+
+        Returns:
+            The message associated with the timer, or None if not set.
+        """
         return cls._get_local().timer_msg.get(name)
 
     @classmethod
     def message(cls, name: str, value: str):
-        """records a message for the timer"""
+        """Records a message for the timer.
+
+        Args:
+            name: The name of the timer.
+            value: The message string to record.
+        """
         cls._get_local().timer_msg[name] = value
 
     @classmethod
     def event(cls, name: str, msg: Optional[str] = None, values: Any = None):
-        """Adds an event with a given name, where start and stop is the same time."""
+        """Adds an event with a given name, where start and stop is the same time.
+
+        Args:
+            name: The name of the event.
+            msg: Optional message to associate with the event.
+            values: Optional values to associate with the event.
+        """
         cls.start(name, values=values)
         cls.stop(name)
         local = cls._get_local()
@@ -124,7 +185,14 @@ class StopWatch:
 
     @classmethod
     def start(cls, name: Optional[str] = None, values: Any = None):
-        """starts a timer with the given name. If name is None, it is automatically detected."""
+        """Starts a timer with the given name.
+
+        If name is None, it is automatically detected from the caller.
+
+        Args:
+            name: The name of the timer.
+            values: Optional values to associate with the timer.
+        """
         if name is None:
             name = cls._get_caller_name()
             
@@ -142,7 +210,15 @@ class StopWatch:
 
     @classmethod
     def stop(cls, name: Optional[str] = None, state: Any = True, values: Any = None):
-        """stops the timer with a given name. If name is None, it is automatically detected."""
+        """Stops the timer with a given name.
+
+        If name is None, it is automatically detected from the caller.
+
+        Args:
+            name: The name of the timer.
+            state: The final state of the timer (e.g., True for success).
+            values: Optional values to associate with the timer.
+        """
         if name is None:
             name = cls._get_caller_name()
             
@@ -159,12 +235,27 @@ class StopWatch:
 
     @classmethod
     def get_status(cls, name: str) -> Any:
-        """returns the status of the timer"""
+        """Returns the status of the timer.
+
+        Args:
+            name: The name of the timer.
+
+        Returns:
+            The status value associated with the timer.
+        """
         return cls._get_local().timer_status.get(name)
 
     @classmethod
     def get(cls, name: str, digits: int = 4) -> Union[float, str, None]:
-        """returns the elapsed time of the timer."""
+        """Returns the elapsed time of the timer.
+
+        Args:
+            name: The name of the timer.
+            digits: Number of decimal places to round to. Defaults to 4.
+
+        Returns:
+            The elapsed time as a float, "undefined" if not found, or None on error.
+        """
         local = cls._get_local()
         if name in local.timer_end and local.timer_end[name] is not None:
             try:
@@ -177,7 +268,15 @@ class StopWatch:
 
     @classmethod
     def sum(cls, name: str, digits: int = 4) -> Union[float, str, None]:
-        """returns the sum of the timer if used multiple times"""
+        """Returns the sum of the timer if used multiple times.
+
+        Args:
+            name: The name of the timer.
+            digits: Number of decimal places to round to. Defaults to 4.
+
+        Returns:
+            The total elapsed time as a float, "undefined" if not found, or None on error.
+        """
         local = cls._get_local()
         if name in local.timer_end:
             try:
@@ -189,7 +288,7 @@ class StopWatch:
 
     @classmethod
     def clear(cls):
-        """clear all timers"""
+        """Clears all timers in the current thread."""
         local = cls._get_local()
         local.timer_start.clear()
         local.timer_end.clear()
@@ -201,7 +300,12 @@ class StopWatch:
 
     @classmethod
     def print(cls, label: str, name: str):
-        """prints a timer with a label"""
+        """Prints a timer with a label.
+
+        Args:
+            label: The label to print before the timer value.
+            name: The name of the timer to print.
+        """
         if cls.verbose:
             val = cls.get(name)
             if isinstance(val, float):
@@ -211,7 +315,13 @@ class StopWatch:
 
     @classmethod
     def benchmark(cls, sysinfo: bool = True, tag: Optional[str] = None, filename: Optional[str] = None):
-        """prints out all timers in a convenient benchmark format for the current thread."""
+        """Prints out all timers in a convenient benchmark format for the current thread.
+
+        Args:
+            sysinfo: If True, includes system information in the output. Defaults to True.
+            tag: Optional tag to include in the benchmark.
+            filename: Optional file path to write the benchmark results to.
+        """
         content = "\n--- Benchmark Results (Current Thread) ---\n"
         
         if sysinfo:
@@ -239,8 +349,24 @@ class StopWatch:
                 f.write(content)
 
 class StopWatchBlock:
-    """Context manager for StopWatch."""
+    """Context manager for StopWatch.
+
+    Attributes:
+        name: The name of the timer.
+        data: Optional data to associate with the timer.
+        log: The log destination (file path or stream).
+        is_file: Boolean indicating if the log is a file.
+        start_time: The time when the block was entered.
+    """
     def __init__(self, name: str, data: Any = None, log=sys.stdout, mode: str = "w"):
+        """Initializes the StopWatchBlock.
+
+        Args:
+            name: The name of the timer.
+            data: Optional data to associate with the timer.
+            log: The log destination. Defaults to sys.stdout.
+            mode: The mode to open the log file in. Defaults to "w".
+        """
         self.name = name
         self.data = data
         self.log = log
@@ -251,11 +377,23 @@ class StopWatchBlock:
             self.log = open(log, mode)
 
     def __enter__(self):
+        """Starts the timer and returns the current elapsed time.
+
+        Returns:
+            The current elapsed time of the timer.
+        """
         StopWatch.start(self.name)
         self.start_time = datetime.datetime.now()
         return StopWatch.get(self.name)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        """Stops the timer and logs the result.
+
+        Args:
+            exc_type: The type of the exception that occurred.
+            exc_val: The instance of the exception that occurred.
+            exc_tb: The traceback of the exception that occurred.
+        """
         self.stop_time = datetime.datetime.now()
         StopWatch.stop(self.name)
         entry = StopWatch.get(self.name)

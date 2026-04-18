@@ -25,6 +25,7 @@ dev = [
     "twine",
     "ruff",
     "mypy",
+    "pytest-asyncio",
 ]
 
 [tool.setuptools.dynamic]

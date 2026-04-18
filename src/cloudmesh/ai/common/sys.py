@@ -1,3 +1,9 @@
+"""
+System utility functions for cloudmesh-ai.
+Provides tools for OS detection, hardware information retrieval, 
+and real-time system metrics collection.
+"""
+
 import multiprocessing
 import os
 import platform
@@ -18,30 +24,54 @@ import datetime
 
 @lru_cache(maxsize=1)
 def _get_os_release_data() -> str:
-    """Internal helper to read /etc/os-release once and cache it."""
+    """Internal helper to read /etc/os-release once and cache it.
+
+    Returns:
+        The content of /etc/os-release as a lowercase string, or an empty string if not found.
+    """
     try:
         return Path("/etc/os-release").read_text().lower()
     except OSError:
         return ""
 
 def os_is_windows() -> bool:
-    """Checks if the operating system is Windows."""
+    """Checks if the operating system is Windows.
+
+    Returns:
+        True if the OS is Windows, False otherwise.
+    """
     return platform.system() == "Windows"
 
 def os_is_mac() -> bool:
-    """Checks if the operating system is macOS."""
+    """Checks if the operating system is macOS.
+
+    Returns:
+        True if the OS is macOS, False otherwise.
+    """
     return platform.system() == "Darwin"
 
 def os_is_linux() -> bool:
-    """Checks if the os is linux (excluding Raspberry Pi)."""
+    """Checks if the os is linux (excluding Raspberry Pi).
+
+    Returns:
+        True if the OS is Linux and not Raspbian, False otherwise.
+    """
     return platform.system() == "Linux" and "raspbian" not in _get_os_release_data()
 
 def os_is_pi() -> bool:
-    """Checks if the os is Raspberry OS."""
+    """Checks if the os is Raspberry OS.
+
+    Returns:
+        True if the OS is Raspbian, False otherwise.
+    """
     return platform.system() == "Linux" and "raspbian" in _get_os_release_data()
 
 def has_window_manager() -> bool:
-    """Checks if a GUI environment is likely available."""
+    """Checks if a GUI environment is likely available.
+
+    Returns:
+        True if a window manager is likely present, False otherwise.
+    """
     if os_is_mac() or os_is_windows():
         return True
     return any(env in os.environ for env in [
@@ -54,7 +84,11 @@ def has_window_manager() -> bool:
 # --- 2. Identity & Platform Helpers ---
 
 def sys_user() -> str:
-    """Returns the current username with Colab and Root detection."""
+    """Returns the current username with Colab and Root detection.
+
+    Returns:
+        The detected username as a string.
+    """
     if "COLAB_GPU" in os.environ:
         return "colab"
     try:
@@ -66,7 +100,11 @@ def sys_user() -> str:
         return os.environ.get("USER", os.environ.get("USERNAME", "None"))
 
 def get_platform() -> str:
-    """Returns a simplified string representing the OS platform."""
+    """Returns a simplified string representing the OS platform.
+
+    Returns:
+        A string representing the platform (e.g., 'macos', 'windows', 'raspberry').
+    """
     if os_is_mac():
         return "macos"
     if os_is_windows():
@@ -76,7 +114,11 @@ def get_platform() -> str:
     return sys.platform
 
 def get_cpu_description() -> str:
-    """Safely retrieves the CPU model name across platforms."""
+    """Safely retrieves the CPU model name across platforms.
+
+    Returns:
+        The CPU model description as a string.
+    """
     plat = get_platform()
     try:
         if plat == "macos":
@@ -93,7 +135,12 @@ def get_cpu_description() -> str:
     return "Unknown"
 
 def _get_nvidia_gpu_info() -> Dict[str, Any]:
-    """Retrieves GPU info using nvidia-smi."""
+    """Retrieves GPU info using nvidia-smi.
+
+    Returns:
+        A dictionary containing NVIDIA GPU metrics if present, otherwise 
+        {'gpu.present': False}.
+    """
     gpu_data = {"gpu.present": False}
     try:
         cmd = [
@@ -120,7 +167,12 @@ def _get_nvidia_gpu_info() -> Dict[str, Any]:
     return gpu_data
 
 def _get_amd_gpu_info() -> Dict[str, Any]:
-    """Retrieves GPU info using rocm-smi."""
+    """Retrieves GPU info using rocm-smi.
+
+    Returns:
+        A dictionary containing AMD GPU metrics if present, otherwise 
+        {'gpu.present': False}.
+    """
     gpu_data = {"gpu.present": False}
     try:
         # rocm-smi can provide VRAM and temp
@@ -138,7 +190,12 @@ def _get_amd_gpu_info() -> Dict[str, Any]:
     return gpu_data
 
 def _get_apple_gpu_info() -> Dict[str, Any]:
-    """Retrieves GPU info using system_profiler on macOS."""
+    """Retrieves GPU info using system_profiler on macOS.
+
+    Returns:
+        A dictionary containing Apple GPU metrics if present, otherwise 
+        {'gpu.present': False}.
+    """
     gpu_data = {"gpu.present": False}
     try:
         output = subprocess.check_output(["system_profiler", "SPDisplaysDataType"]).decode().strip()
@@ -154,7 +211,12 @@ def _get_apple_gpu_info() -> Dict[str, Any]:
     return gpu_data
 
 def _get_intel_gpu_info() -> Dict[str, Any]:
-    """Retrieves GPU info for Intel GPUs on Linux."""
+    """Retrieves GPU info for Intel GPUs on Linux.
+
+    Returns:
+        A dictionary containing Intel GPU metrics if present, otherwise 
+        {'gpu.present': False}.
+    """
     gpu_data = {"gpu.present": False}
     try:
         # Check for Intel GPU in /sys/class/drm
@@ -169,9 +231,11 @@ def _get_intel_gpu_info() -> Dict[str, Any]:
     return gpu_data
 
 def get_gpu_info() -> Dict[str, Any]:
-    """
-    Attempts to retrieve GPU information from multiple vendors.
-    Returns a dictionary with VRAM, temperature, and power draw if available.
+    """Attempts to retrieve GPU information from multiple vendors.
+
+    Returns:
+        A dictionary with VRAM, temperature, and power draw if available, 
+        otherwise {'gpu.present': False}.
     """
     # 1. Try NVIDIA
     info = _get_nvidia_gpu_info()
@@ -197,8 +261,58 @@ def get_gpu_info() -> Dict[str, Any]:
 
     return {"gpu.present": False}
 
+def get_thermal_info() -> Dict[str, Any]:
+    """Retrieves system thermal information across platforms.
+
+    Returns:
+        A dictionary with CPU and GPU temperatures.
+    """
+    thermal_data = {"thermal.present": False, "cpu.temp": None}
+    
+    if os_is_linux():
+        try:
+            # Try thermal_zone first
+            zones = list(Path("/sys/class/thermal").glob("thermal_zone*"))
+            if zones:
+                # Usually zone0 is the package temp
+                temp_raw = Path(zones[0]) / "temp"
+                if temp_raw.exists():
+                    temp_c = int(temp_raw.read_text().strip()) / 1000.0
+                    thermal_data["cpu.temp"] = f"{temp_c:.1f}°C"
+                    thermal_data["thermal.present"] = True
+            
+            # Try hwmon for more detailed sensors if zone failed or for backup
+            if not thermal_data["thermal.present"]:
+                hwmon_paths = list(Path("/sys/class/hwmon").glob("hwmon*"))
+                for path in hwmon_paths:
+                    temp_files = list(path.glob("temp*_input"))
+                    if temp_files:
+                        temp_c = int(temp_files[0].read_text().strip()) / 1000.0
+                        thermal_data["cpu.temp"] = f"{temp_c:.1f}°C"
+                        thermal_data["thermal.present"] = True
+                        break
+        except (OSError, ValueError):
+            pass
+
+    elif os_is_mac():
+        try:
+            # macOS doesn't have a simple /sys path. 
+            # We can try sysctl, though it's often restricted on Apple Silicon.
+            output = subprocess.check_output(["sysctl", "-n", "machdep.cpu.temperature"]).decode().strip()
+            if output:
+                thermal_data["cpu.temp"] = f"{output}°C"
+                thermal_data["thermal.present"] = True
+        except (subprocess.SubprocessError, OSError):
+            pass
+
+    return thermal_data
+
 def get_numa_info() -> Dict[str, Any]:
-    """Detects NUMA nodes on Linux systems."""
+    """Detects NUMA nodes on Linux systems.
+
+    Returns:
+        A dictionary containing NUMA presence and node details.
+    """
     numa_data = {"numa.present": False}
     if os_is_linux():
         try:
@@ -214,8 +328,51 @@ def get_numa_info() -> Dict[str, Any]:
             pass
     return numa_data
 
+def get_container_info() -> Dict[str, Any]:
+    """Detects if the system is running inside a container (Docker, Kubernetes).
+
+    Returns:
+        A dictionary with container type and metadata.
+    """
+    container_data = {"container.present": False}
+    
+    # 1. Docker detection
+    if Path("/.dockerenv").exists():
+        container_data["container.present"] = True
+        container_data["container.type"] = "docker"
+    
+    # 2. Cgroup detection (Linux)
+    if os_is_linux():
+        try:
+            cgroup_content = Path("/proc/1/cgroup").read_text()
+            if "docker" in cgroup_content.lower():
+                container_data["container.present"] = True
+                container_data["container.type"] = "docker"
+            elif "kubepods" in cgroup_content.lower():
+                container_data["container.present"] = True
+                container_data["container.type"] = "kubernetes"
+        except OSError:
+            pass
+
+    # 3. Kubernetes specific detection
+    if os.environ.get("KUBERNETES_SERVICE_HOST"):
+        container_data["container.present"] = True
+        container_data["container.type"] = "kubernetes"
+        
+        # Try to extract namespace
+        ns_path = Path("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+        if ns_path.exists():
+            container_data["container.namespace"] = ns_path.read_text().strip()
+
+    return container_data
+
 def get_network_info() -> Dict[str, Any]:
-    """Detects high-speed network interfaces (InfiniBand, RoCE) on Linux."""
+    """Detects high-speed network interfaces (InfiniBand, RoCE) on Linux.
+
+    Returns:
+        A dictionary indicating if high-speed networking is present and 
+        listing the interfaces.
+    """
     net_data = {"net.high_speed": False, "net.interfaces": []}
     if os_is_linux():
         try:
@@ -235,9 +392,14 @@ def get_network_info() -> Dict[str, Any]:
     return net_data
 
 def get_disk_read_speed(path: str, size_mb: int = 100) -> Optional[str]:
-    """
-    Measures the read speed of a file to profile disk throughput.
-    Returns the speed in MB/s.
+    """Measures the read speed of a file to profile disk throughput.
+
+    Args:
+        path: Path to the file to read.
+        size_mb: Amount of data to read in megabytes. Defaults to 100.
+
+    Returns:
+        The read speed as a string (e.g., "150.25 MB/s"), or None if an error occurs.
     """
     try:
         file_path = Path(path)
@@ -257,14 +419,92 @@ def get_disk_read_speed(path: str, size_mb: int = 100) -> Optional[str]:
     except Exception:
         return None
 
+def get_cpu_metrics() -> Dict[str, Any]:
+    """Retrieves real-time CPU utilization and load averages.
+
+    Returns:
+        A dictionary containing 'cpu.utilization_overall', 'cpu.utilization_per_core', 
+        and 'cpu.load_avg'.
+    """
+    try:
+        return {
+            "cpu.utilization_overall": f"{psutil.cpu_percent(interval=None)}%",
+            "cpu.utilization_per_core": [f"{x}%" for x in psutil.cpu_percent(interval=None, percpu=True)],
+            "cpu.load_avg": psutil.getloadavg() if hasattr(psutil, "getloadavg") else None,
+        }
+    except Exception:
+        return {}
+
+def get_memory_metrics() -> Dict[str, Any]:
+    """Retrieves detailed real-time memory and swap usage.
+
+    Returns:
+        A dictionary containing utilization percentages and human-readable 
+        sizes for available, used, and swap memory.
+    """
+    try:
+        vm = psutil.virtual_memory()
+        sw = psutil.swap_memory()
+        return {
+            "mem.utilization": f"{vm.percent}%",
+            "mem.available": humanize.naturalsize(vm.available, binary=True),
+            "mem.used": humanize.naturalsize(vm.used, binary=True),
+            "swap.total": humanize.naturalsize(sw.total, binary=True),
+            "swap.used": humanize.naturalsize(sw.used, binary=True),
+            "swap.percent": f"{sw.percent}%",
+        }
+    except Exception:
+        return {}
+
+def get_disk_metrics() -> Dict[str, Any]:
+    """Retrieves real-time disk usage and I/O statistics for the root partition.
+
+    Returns:
+        A dictionary containing total, used, and free space, as well as 
+        read/write counts and bytes.
+    """
+    try:
+        usage = psutil.disk_usage("/")
+        io = psutil.disk_io_counters()
+        return {
+            "disk.total": humanize.naturalsize(usage.total, binary=True),
+            "disk.used": humanize.naturalsize(usage.used, binary=True),
+            "disk.free": humanize.naturalsize(usage.free, binary=True),
+            "disk.percent": f"{usage.percent}%",
+            "disk.read_count": io.read_count if io else None,
+            "disk.write_count": io.write_count if io else None,
+            "disk.read_bytes": humanize.naturalsize(io.read_bytes, binary=True) if io else None,
+            "disk.write_bytes": humanize.naturalsize(io.write_bytes, binary=True) if io else None,
+        }
+    except Exception:
+        return {}
+
 # --- 3. Main Data Collector ---
 
 def resolve_package_path(anchor: str, relative_path: str) -> Path:
-    """Resolves a path relative to a given anchor file."""
+    """Resolves a path relative to a given anchor file.
+
+    Args:
+        anchor: The anchor file path.
+        relative_path: The relative path to resolve.
+
+    Returns:
+        The resolved absolute Path.
+    """
     return Path(anchor).parent / relative_path
 
-def systeminfo(info: Optional[Dict[str, Any]] = None, user: Optional[str] = None, node: Optional[str] = None) -> Dict[str, Any]:
-    """Collects comprehensive system metadata into a dictionary."""
+def systeminfo(info: Optional[Dict[str, Any]] = None, user: Optional[str] = None, node: Optional[str] = None, realtime: bool = False) -> Dict[str, Any]:
+    """Collects comprehensive system metadata into a dictionary.
+
+    Args:
+        info: Optional dictionary of additional information to merge into the result.
+        user: Optional override for the current system user.
+        node: Optional override for the system node name.
+        realtime: If True, includes real-time CPU, memory, and disk utilization metrics.
+
+    Returns:
+        A dictionary containing system hardware, OS, and (optionally) real-time performance data.
+    """
     uname = platform.uname()
     mem = psutil.virtual_memory()
 
@@ -301,11 +541,17 @@ def systeminfo(info: Optional[Dict[str, Any]] = None, user: Optional[str] = None
     # GPU Info
     data.update(get_gpu_info())
 
+    # Thermal Info
+    data.update(get_thermal_info())
+
     # NUMA Info
     data.update(get_numa_info())
 
     # Network Info
     data.update(get_network_info())
+
+    # Container Info
+    data.update(get_container_info())
 
     if os_is_mac():
         data["platform.version"] = platform.mac_ver()[0]
@@ -322,6 +568,11 @@ def systeminfo(info: Optional[Dict[str, Any]] = None, user: Optional[str] = None
                         data[clean_k] = clean_v
         except OSError:
             data["platform.version"] = uname.version
+
+    if realtime:
+        data.update(get_cpu_metrics())
+        data.update(get_memory_metrics())
+        data.update(get_disk_metrics())
 
     if info:
         data.update(info)
