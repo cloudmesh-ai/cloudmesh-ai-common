@@ -298,7 +298,11 @@ def get_thermal_info() -> Dict[str, Any]:
         try:
             # macOS doesn't have a simple /sys path. 
             # We can try sysctl, though it's often restricted on Apple Silicon.
-            output = subprocess.check_output(["sysctl", "-n", "machdep.cpu.temperature"]).decode().strip()
+            # Use stderr=subprocess.DEVNULL to suppress "unknown oid" messages
+            output = subprocess.check_output(
+                ["sysctl", "-n", "machdep.cpu.temperature"], 
+                stderr=subprocess.DEVNULL
+            ).decode().strip()
             if output:
                 thermal_data["cpu.temp"] = f"{output}°C"
                 thermal_data["thermal.present"] = True

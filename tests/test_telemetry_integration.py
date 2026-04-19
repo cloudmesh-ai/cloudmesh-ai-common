@@ -88,3 +88,38 @@ def test_telemetry_failure_tracking():
     
     # Should have 'started' and 'failed'
     assert summary["status_distribution"].get("failed", 0) == 1
+
+def test_telemetry_suppression():
+    """Verify that telemetry is suppressed when CLOUDMESH_AI_TELEMETRY_DISABLED is set."""
+    # Setup a mock backend to track emissions
+    class MockBackend:
+        def __init__(self):
+            self.emitted = False
+        def emit(self, record):
+            self.emitted = True
+
+    mock_backend = MockBackend()
+    
+    # 1. Test Sync Suppression
+    os.environ["CLOUDMESH_AI_TELEMETRY_DISABLED"] = "1"
+    tel_sync = Telemetry("suppress-sync", backends=[mock_backend])
+    mock_backend.emitted = False
+    tel_sync.emit("started")
+    assert not mock_backend.emitted, "Sync telemetry should be suppressed"
+
+    # 2. Test Async Suppression
+    tel_async = AsyncTelemetry("suppress-async", backends=[mock_backend])
+    mock_backend.emitted = False
+    # We need to run the async method
+    asyncio.run(tel_async.emit("started"))
+    assert not mock_backend.emitted, "Async telemetry should be suppressed"
+
+    # 3. Test Enabled (to ensure it still works)
+    os.environ["CLOUDMESH_AI_TELEMETRY_DISABLED"] = "0"
+    tel_enabled = Telemetry("enabled-test", backends=[mock_backend])
+    mock_backend.emitted = False
+    tel_enabled.emit("started")
+    assert mock_backend.emitted, "Telemetry should be emitted when enabled"
+    
+    # Cleanup env
+    del os.environ["CLOUDMESH_AI_TELEMETRY_DISABLED"]

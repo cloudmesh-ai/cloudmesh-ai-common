@@ -213,8 +213,9 @@ class Telemetry:
             metrics: A dictionary of KPIs and measurements.
             message: An optional human-readable message.
             stdout: If True, prints the JSON record to stdout.
-
         """
+        if os.environ.get("CLOUDMESH_AI_TELEMETRY_DISABLED", "").lower() in ("1", "true", "yes"):
+            return
         all_metrics = (metrics or {}).copy()
         all_metrics.update(kwargs)
         record = {
@@ -318,8 +319,9 @@ class AsyncTelemetry(Telemetry):
             metrics: A dictionary of KPIs.
             message: An optional human-readable message.
             stdout: If True, prints the JSON record to stdout.
-
         """
+        if os.environ.get("CLOUDMESH_AI_TELEMETRY_DISABLED", "").lower() in ("1", "true", "yes"):
+            return
         # We reuse the record creation logic from the base class
         # but we wrap the blocking I/O calls in asyncio.to_thread
         
