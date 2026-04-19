@@ -9,7 +9,7 @@ import os
 import sqlite3
 import asyncio
 import time
-from contextlib import contextmanager
+from contextlib import contextmanager, asynccontextmanager
 from datetime import datetime
 from typing import Dict, Any, Optional, Union, List, Protocol
 from pathlib import Path
@@ -274,12 +274,12 @@ class Telemetry:
 
     @contextmanager
     def track(self, message: Optional[str] = None, metrics: Optional[Dict[str, Any]] = None):
-        """Context manager to automatically track the start and completion of a task.
+        """
+        Context manager to automatically track the start and completion of a task.
 
         Args:
             message: Optional message for the start event.
             metrics: Initial metrics to include.
-
         """
         self.start(message=message, **(metrics or {}))
         start_time = time.perf_counter()
@@ -381,15 +381,14 @@ class AsyncTelemetry(Telemetry):
         """
         await self.emit("failed", metrics=metrics, message=error, **kwargs)
 
-    from contextlib import asynccontextmanager
     @asynccontextmanager
     async def track(self, message: Optional[str] = None, metrics: Optional[Dict[str, Any]] = None):
-        """Async context manager to automatically track the start and completion of a task.
+        """
+        Async context manager to automatically track the start and completion of a task.
 
         Args:
             message: Optional message for the start event.
             metrics: Initial metrics to include.
-
         """
         await self.start(message=message, **(metrics or {}))
         start_time = time.perf_counter()
