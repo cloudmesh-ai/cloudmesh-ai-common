@@ -1,8 +1,8 @@
 {
     "package_name": "cloudmesh-ai-common",
-    "baseline_commit": "e6e76e621b61b4da37e4e133683fb278760933cf",
+    "baseline_commit": "2e2e6afdcd21ceb2ec4768c71261cda7d2cf82f9",
     "original_version": null,
-    "created_tag": "v7.0.5.dev7",
+    "created_tag": "v7.0.5.dev8",
     "completed_steps": [
         "validate",
         "baseline",
