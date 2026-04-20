@@ -1,11 +1,12 @@
 {
     "package_name": "cloudmesh-ai-common",
-    "baseline_commit": "d8e293a72948ac812e124276a63c8c60ba464b83",
+    "baseline_commit": "e6e76e621b61b4da37e4e133683fb278760933cf",
     "original_version": null,
-    "created_tag": "v7.0.5.dev6",
+    "created_tag": "v7.0.5.dev7",
     "completed_steps": [
         "validate",
-        "baseline"
+        "baseline",
+        "testpypi"
     ],
     "start_time": "2026-04-20T18:37:31.229404"
 }
