@@ -8,6 +8,12 @@ import yaml
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+from rich.console import Console
+from rich.panel import Panel
+from rich.box import ROUNDED
+
+console = Console()
+
 def path_expand(text: str, slashreplace: bool = True) -> str:
     """Expands a path string by resolving '~', environment variables, and relative links.
 
@@ -81,6 +87,26 @@ def create_benchmark_yaml(path: str, n: int) -> None:
     location = path_expand(path)
     with open(location, "w") as yaml_file:
         yaml.dump(cm, yaml_file, default_flow_style=False)
+
+def print_banner(title: str, content: Optional[str] = None):
+    """
+    Creates a banner with a title and optional content using a rich Panel.
+    Returns the Panel object.
+    """
+    # If content is None, we use an empty string to ensure the panel renders
+    panel_content = content if content else ""
+    
+    # We use markup in the title to set the style since title_style is not a valid argument
+    styled_title = f"[bold magenta]{title}[/bold magenta]" if title else ""
+    panel = Panel(
+        panel_content,
+        title=styled_title,
+        box=ROUNDED,
+        expand=True,
+        border_style="bold blue"
+    )
+    
+    return panel
 
 def create_benchmark_file(path: str, n: int) -> int:
     """Creates a file of a given size in binary megabytes.
