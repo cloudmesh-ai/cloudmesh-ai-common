@@ -12,7 +12,26 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.box import ROUNDED
 
-console = Console()
+class AIConsole(Console):
+    """Custom Console with convenience methods for styled output."""
+
+    def error(self, message: str):
+        """Prints an error message in red."""
+        self.print(f"[red]ERROR: {message}[/red]")
+
+    def warning(self, message: str):
+        """Prints a warning message in yellow."""
+        self.print(f"[yellow]WARNING: {message}[/yellow]")
+
+    def msg(self, message: str):
+        """Prints a message in blue."""
+        self.print(f"[blue]MSG: {message}[/blue]")
+
+    def note(self, message: str):
+        """Prints a note in cyan."""
+        self.print(f"[cyan]NOTE: {message}[/cyan]")
+
+console = AIConsole()
 
 def path_expand(text: str, slashreplace: bool = True) -> str:
     """Expands a path string by resolving '~', environment variables, and relative links.
@@ -88,7 +107,7 @@ def create_benchmark_yaml(path: str, n: int) -> None:
     with open(location, "w") as yaml_file:
         yaml.dump(cm, yaml_file, default_flow_style=False)
 
-def print_banner(title: str, content: Optional[str] = None):
+def banner(title: str, content: Optional[str] = None):
     """
     Creates a banner with a title and optional content using a rich Panel.
     Returns the Panel object.

@@ -26,6 +26,7 @@ from .telemetry import (
     Telemetry,
     AsyncTelemetry,
 )
+from .io import banner
 from .sys import (
     os_is_windows,
     os_is_mac,

@@ -25,3 +25,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 - Initial project structure established to provide a shared foundation for all `cloudmesh-ai` extensions.
+- **I/O Utilities**: Updated `console` to use semantic methods (`console.error`, `console.msg`) instead of color-coded `console.print` for improved consistency.
