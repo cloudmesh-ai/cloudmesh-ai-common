@@ -8,6 +8,7 @@ import yaml
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+import paramiko
 from rich.console import Console
 from rich.panel import Panel
 from rich.box import ROUNDED
@@ -32,6 +33,29 @@ class AIConsole(Console):
         self.print(f"[cyan]NOTE: {message}[/cyan]")
 
 console = AIConsole()
+
+class SSHClient:
+    """Simple wrapper around paramiko.SSHClient for executing remote commands."""
+
+    def __init__(self, host: str, username: Optional[str] = None):
+        self.host = host
+        self.username = username
+        self.client = None
+
+    def __enter__(self):
+        self.client = paramiko.SSHClient()
+        self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self.client.connect(self.host, username=self.username)
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.client:
+            self.client.close()
+
+    def execute(self, command: str) -> str:
+        """Executes a command on the remote host and returns the stdout."""
+        stdin, stdout, stderr = self.client.exec_command(command)
+        return stdout.read().decode('utf-8')
 
 def path_expand(text: str, slashreplace: bool = True) -> str:
     """Expands a path string by resolving '~', environment variables, and relative links.
@@ -95,7 +119,7 @@ def create_benchmark_yaml(path: str, n: int) -> None:
     """Creates a Cloudmesh service YAML test file with specified number of services.
 
     Args:
-        path: Path where the benchmark YAML file should be created.
+        path: Path where the benchmark YAML should be created.
         n: Number of services to include in the benchmark file.
 
     """
