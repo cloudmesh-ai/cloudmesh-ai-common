@@ -9,11 +9,11 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 import paramiko
-from rich.console import Console
+from rich.console import Console as RichConsole
 from rich.panel import Panel
 from rich.box import ROUNDED
 
-class AIConsole(Console):
+class Console(RichConsole):
     """Custom Console with convenience methods for styled output."""
 
     def error(self, message: str):
@@ -32,30 +32,24 @@ class AIConsole(Console):
         """Prints a note in cyan."""
         self.print(f"[cyan]NOTE: {message}[/cyan]")
 
-console = AIConsole()
+    def ok(self, message: str):
+        """Prints a success message in green."""
+        self.print(f"[green]OK: {message}[/green]")
 
-class SSHClient:
-    """Simple wrapper around paramiko.SSHClient for executing remote commands."""
+    def ynchoice(self, message: str, default: bool = True) -> bool:
+        """Asks a yes/no question and returns a boolean."""
+        suffix = " [Y/n]" if default else " [y/N]"
+        while True:
+            response = input(f"{message}{suffix} ").strip().lower()
+            if not response:
+                return default
+            if response in ("y", "yes"):
+                return True
+            if response in ("n", "no"):
+                return False
+            self.print("[red]Please enter 'y' or 'n'.[/red]")
 
-    def __init__(self, host: str, username: Optional[str] = None):
-        self.host = host
-        self.username = username
-        self.client = None
-
-    def __enter__(self):
-        self.client = paramiko.SSHClient()
-        self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self.client.connect(self.host, username=self.username)
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if self.client:
-            self.client.close()
-
-    def execute(self, command: str) -> str:
-        """Executes a command on the remote host and returns the stdout."""
-        stdin, stdout, stderr = self.client.exec_command(command)
-        return stdout.read().decode('utf-8')
+console = Console()
 
 def readfile(path: str) -> str:
     """Reads the content of a file.

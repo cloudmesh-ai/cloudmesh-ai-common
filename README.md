@@ -2,6 +2,18 @@
 
 `cloudmesh-ai-common` provides a set of shared utilities for the Cloudmesh AI ecosystem, focusing on system introspection, structured telemetry, and standardized logging.
 
+## Installation
+
+### Using pip
+```bash
+pip install cloudmesh-ai-common
+```
+
+### Using pipx (for isolated environment)
+```bash
+pipx install cloudmesh-ai-common
+```
+
 ## Features
 
 ### 1. Enhanced System Introspection (`cloudmesh.ai.common.sys`)
