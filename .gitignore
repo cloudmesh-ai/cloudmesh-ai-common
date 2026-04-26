@@ -1,3 +1,5 @@
+assets/
+.report.html
 .release_state.json
 .python-version
 .aider*
