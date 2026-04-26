@@ -1,6 +1,6 @@
 # Cloudmesh AI Common
 
-`cloudmesh-ai-common` provides a set of shared utilities for the Cloudmesh AI ecosystem, focusing on system introspection, structured telemetry, and standardized logging.
+`cloudmesh-ai-common` provides a set of shared utilities for the Cloudmesh AI ecosystem, focusing on system introspection, structured telemetry, standardized logging, and unified remote execution.
 
 ## Installation
 
@@ -16,7 +16,29 @@ pipx install cloudmesh-ai-common
 
 ## Features
 
-### 1. Enhanced System Introspection (`cloudmesh.ai.common.sys`)
+### 1. Unified Remote Execution (`cloudmesh.ai.common.remote`)
+A robust wrapper around `paramiko` for standardized SSH and SFTP operations across different host environments.
+
+- **Command Execution**: Execute shell commands with timeout support and capture exit status, stdout, and stderr.
+- **File Transfers**: Simplified `upload` and `download` methods using SFTP.
+- **Direct Remote Writing**: `write_remote_file` allows writing strings directly to remote paths, ideal for deploying scripts or configuration files without local temporary files.
+- **Session Management**: Implemented as a context manager to ensure connections are always closed properly.
+
+### 2. Enhanced Console & I/O (`cloudmesh.ai.common.io`)
+A set of utilities to standardize user interaction and file handling.
+
+- **Rich Console**: A custom `Console` class extending `rich.console.Console` with semantic helpers:
+    - `ok()`: Success messages in green.
+    - `error()`: Error messages in red.
+    - `warning()`: Warning messages in yellow.
+    - `msg()`: General messages in blue.
+    - `note()`: Informational notes in cyan.
+    - `ynchoice()`: Standardized yes/no interactive prompts.
+- **Path Expansion**: `path_expand()` resolves `~`, environment variables, and relative paths into absolute POSIX paths.
+- **YAML Helpers**: Safe `load_yaml` and `dump_yaml` utilities that handle directory creation automatically.
+- **Visual Banners**: `banner()` utility to create structured, styled panels for high-level information.
+
+### 3. Enhanced System Introspection (`cloudmesh.ai.common.sys`)
 The system utility provides deep insights into the host hardware and environment.
 
 - **Hardware Detection**: 
@@ -31,7 +53,7 @@ The system utility provides deep insights into the host hardware and environment
     - Disk I/O statistics and usage.
 - **System Info**: The `systeminfo()` function collects a comprehensive snapshot of the environment. Use `realtime=True` to include live performance metrics.
 
-### 2. Advanced Telemetry System (`cloudmesh.ai.common.telemetry`)
+### 4. Advanced Telemetry System (`cloudmesh.ai.common.telemetry`)
 A pluggable telemetry framework for emitting structured performance and status data from AI commands.
 
 - **Pluggable Backends**:
@@ -42,17 +64,55 @@ A pluggable telemetry framework for emitting structured performance and status d
 - **Async Support**: The `AsyncTelemetry` class allows non-blocking telemetry emission using `asyncio`, ensuring that I/O operations do not interfere with compute-intensive AI tasks.
 - **Standardized Events**: Built-in helpers for `start()`, `complete()`, and `fail()` events.
 
-### 3. Telemetry Aggregation (`cloudmesh.ai.common.aggregation`)
+### 5. Telemetry Aggregation (`cloudmesh.ai.common.aggregation`)
 The `TelemetryAggregator` utility allows for the analysis of emitted telemetry data.
 
 - **Multi-source Loading**: Load data from either JSONL files or SQLite databases.
 - **Statistical Summaries**: Calculate success rates, status distributions, and command frequency.
 - **Metric Analysis**: Aggregate specific KPIs to find average, minimum, and maximum values across multiple runs.
 
-### 4. Standardized Logging (`cloudmesh.ai.common.logging`)
+### 6. Standardized Logging (`cloudmesh.ai.common.logging`)
 Provides a consistent logging interface across all AI components to ensure uniform log formatting and traceability.
 
 ## Usage Examples
+
+### Remote Execution
+```python
+from cloudmesh.ai.common.remote import RemoteExecutor
+
+host = "dgx-node-1"
+with RemoteExecutor(host) as executor:
+    # Execute a command
+    status, stdout, stderr = executor.execute("nvidia-smi")
+    if status == 0:
+        print(f"GPU Status: {stdout}")
+    
+    # Write a script directly to the remote host
+    script_content = "#!/bin/bash\necho 'Hello from remote'"
+    executor.write_remote_file(script_content, "/tmp/hello.sh")
+    executor.execute("chmod +x /tmp/hello.sh")
+    executor.execute("/tmp/hello.sh")
+```
+
+### Enhanced Console & I/O
+```python
+from cloudmesh.ai.common.io import console, banner, path_expand
+
+# Use semantic console methods
+console.ok("Operation completed successfully!")
+console.error("Failed to connect to server")
+
+# Interactive yes/no choice
+if console.ynchoice("Do you want to proceed?", default=True):
+    console.msg("Proceeding...")
+
+# Path expansion
+abs_path = path_expand("~/$PROJECT/data.csv")
+print(f"Absolute path: {abs_path}")
+
+# Visual banners
+console.print(banner("System Status", "All systems operational\nLatency: 12ms"))
+```
 
 ### System Info
 ```python

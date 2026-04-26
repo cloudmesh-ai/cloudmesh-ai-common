@@ -2,6 +2,19 @@
 
 All notable changes to `cloudmesh-ai-common` will be documented in this file.
 
+## [7.0.4.dev1] - 2026-04-26
+
+### Added
+- **Unified Remote Execution**: Introduced `cloudmesh.ai.common.remote.RemoteExecutor` for standardized SSH and SFTP operations.
+    - Support for command execution with exit status capture.
+    - Simplified file upload and download.
+    - Direct remote file writing (`write_remote_file`).
+- **Console Enhancements**: Added semantic helpers to the `Console` class: `ok()`, `error()`, `warning()`, and `ynchoice()`.
+- **Remote Testing**: Added `tests/test_remote.py` with comprehensive mocks for verifying remote operations.
+
+### Changed
+- **I/O Utilities**: Removed redundant `SSHClient` from `cloudmesh.ai.common.io` in favor of `RemoteExecutor`.
+
 ## [7.0.3.dev1] - 2026-04-25
 
 ### Added
