@@ -22,9 +22,6 @@ def test_stopwatch_thread_safety():
         StopWatch.stop(name)
         return StopWatch.get(name)
 
-    t1 = threading.Thread(target=worker_same_name, args=(0.1,))
-    t2 = threading.Thread(target=worker_same_name, args=(0.2,))
-    
     # We need to capture the return values. Since Thread doesn't return, 
     # we'll use a list.
     results = []
@@ -44,7 +41,6 @@ def test_stopwatch_thread_safety():
     # If they shared a dictionary, the second one to stop would have 
     # a weird value or they would overwrite.
     
-    print(f"Results: {results}")
     assert len(results) == 2
     assert any(0.1 <= r <= 0.2 for r in results)
     assert any(0.2 <= r <= 0.3 for r in results)
@@ -76,9 +72,3 @@ def test_stopwatch_timer_context_manager():
     # 3. Test that it's in the keys
     assert timer_name in StopWatch.keys()
     assert timer_name_err in StopWatch.keys()
-
-if __name__ == "__main__":
-    test_stopwatch_thread_safety()
-    print("Thread safety test passed!")
-    test_stopwatch_timer_context_manager()
-    print("Context manager test passed!")

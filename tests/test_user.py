@@ -1,66 +1,58 @@
 """Unit tests for cloudmesh.ai.common.user module."""
 
-import unittest
 import os
 import sys
-import pwd
-from unittest.mock import patch, MagicMock
+import pytest
+from unittest.mock import patch
 from pathlib import Path
 from cloudmesh.ai.common import user
 
 
-class TestUserModule(unittest.TestCase):
-    """Test cases for user utility functions."""
-
-    @patch('os.geteuid', return_value=0)
-    def test_is_root_unix_true(self, mock_geteuid):
-        """Test is_root returns True on Unix with UID 0."""
-        result = user.is_root()
-        self.assertTrue(result)
-
-    @patch('os.geteuid', return_value=1000)
-    def test_is_root_unix_false(self, mock_geteuid):
-        """Test is_root returns False on Unix with non-zero UID."""
-        result = user.is_root()
-        self.assertFalse(result)
-
-    @patch('getpass.getuser', return_value='testuser')
-    def test_get_user(self, mock_getuser):
-        """Test get function returns current username."""
-        result = user.get()
-        self.assertEqual(result, 'testuser')
-
-    def test_home_returns_path(self):
-        """Test home function returns a Path object."""
-        result = user.home()
-        self.assertIsInstance(result, Path)
-        self.assertTrue(result.exists())
-
-    @unittest.skipIf(sys.platform == 'win32', "POSIX-only test")
-    def test_groups_unix(self):
-        """Test groups returns list on Unix."""
-        result = user.groups()
-        self.assertIsInstance(result, list)
-
-    @unittest.skipIf(sys.platform != 'win32', "Windows-only test")
-    def test_groups_windows(self):
-        """Test groups returns empty list on Windows."""
-        result = user.groups()
-        self.assertEqual(result, [])
-
-    @unittest.skipIf(sys.platform == 'win32', "POSIX-only test")
-    def test_exists_unix_valid_user(self):
-        """Test exists returns True for current user on Unix."""
-        current_user = user.get()
-        result = user.exists(current_user)
-        self.assertTrue(result)
-
-    @unittest.skipIf(sys.platform == 'win32', "POSIX-only test")
-    def test_exists_unix_invalid_user(self):
-        """Test exists returns False for non-existing Unix user."""
-        result = user.exists('thisuserdoesnotexist_12345')
-        self.assertFalse(result)
+@patch('os.geteuid', return_value=0)
+def test_is_root_unix_true(mock_geteuid):
+    """Test is_root returns True on Unix with UID 0."""
+    assert user.is_root() is True
 
 
-if __name__ == '__main__':
-    unittest.main()
+@patch('os.geteuid', return_value=1000)
+def test_is_root_unix_false(mock_geteuid):
+    """Test is_root returns False on Unix with non-zero UID."""
+    assert user.is_root() is False
+
+
+@patch('getpass.getuser', return_value='testuser')
+def test_get_user(mock_getuser):
+    """Test get function returns current username."""
+    assert user.get() == 'testuser'
+
+
+def test_home_returns_path():
+    """Test home function returns a Path object."""
+    result = user.home()
+    assert isinstance(result, Path)
+    assert result.exists()
+
+
+@pytest.mark.skipif(sys.platform == 'win32', reason="POSIX-only test")
+def test_groups_unix():
+    """Test groups returns list on Unix."""
+    assert isinstance(user.groups(), list)
+
+
+@pytest.mark.skipif(sys.platform != 'win32', reason="Windows-only test")
+def test_groups_windows():
+    """Test groups returns empty list on Windows."""
+    assert user.groups() == []
+
+
+@pytest.mark.skipif(sys.platform == 'win32', reason="POSIX-only test")
+def test_exists_unix_valid_user():
+    """Test exists returns True for current user on Unix."""
+    current_user = user.get()
+    assert user.exists(current_user) is True
+
+
+@pytest.mark.skipif(sys.platform == 'win32', reason="POSIX-only test")
+def test_exists_unix_invalid_user():
+    """Test exists returns False for non-existing Unix user."""
+    assert user.exists('thisuserdoesnotexist_12345') is False
