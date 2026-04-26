@@ -57,6 +57,18 @@ class SSHClient:
         stdin, stdout, stderr = self.client.exec_command(command)
         return stdout.read().decode('utf-8')
 
+def readfile(path: str) -> str:
+    """Reads the content of a file.
+    
+    Args:
+        path: Path to the file.
+        
+    Returns:
+        The content of the file as a string.
+    """
+    with open(path, 'r') as f:
+        return f.read()
+
 def path_expand(text: str, slashreplace: bool = True) -> str:
     """Expands a path string by resolving '~', environment variables, and relative links.
 

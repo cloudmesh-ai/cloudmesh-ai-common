@@ -26,7 +26,9 @@ from .telemetry import (
     Telemetry,
     AsyncTelemetry,
 )
-from .io import banner
+from .io import banner, readfile
+from .debug import HEADING
+from .util import DotDict
 from .sys import (
     os_is_windows,
     os_is_mac,
