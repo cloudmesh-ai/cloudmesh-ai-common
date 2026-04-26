@@ -1,5 +1,6 @@
 assets/
 .report.html
+.cloudmesh
 .release_state.json
 .python-version
 .aider*
@@ -240,5 +241,5 @@ __marimo__/
 
 # Cloudmesh AI Release specific
 .release_state.json
-release_*.logrelease_*.log
+release_*.log
 .DS_Store

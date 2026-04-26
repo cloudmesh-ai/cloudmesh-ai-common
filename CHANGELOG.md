@@ -2,6 +2,17 @@
 
 All notable changes to `cloudmesh-ai-common` will be documented in this file.
 
+## [7.0.3.dev1] - 2026-04-25
+
+### Added
+- **Enhanced DotDict**: Implemented `DotDict` in `cloudmesh.ai.common.util` supporting recursive nested attribute access (e.g., `d.a.b`).
+- **Debug Utilities**: Added `HEADING` in `cloudmesh.ai.common.debug` for formatted output with automatic caller context.
+- **I/O Utilities**: Added `readfile` to `cloudmesh.ai.common.io` for standardized file reading.
+- **Common Tests**: Added `tests/test_common_utils.py` to verify new shared utilities.
+
+### Changed
+- **Config System**: Refactored `cloudmesh.ai.common.Config` to use `DotDict` for internal data management, simplifying dot-path access and updates.
+
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [7.0.2.dev1] - 2026-04-19

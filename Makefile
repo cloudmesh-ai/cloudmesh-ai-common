@@ -25,7 +25,7 @@ help:
 	@echo "  clean         - Remove build artifacts, cache, and test debris"
 	@echo "  build         - Build distributions (sdist and wheel)"
 	@echo "  check         - Build and validate metadata/README"
-	@echo "  test          - Run pytest suite"
+	@echo "  test          - Run pytest suite with HTML report"
 	@echo "  test-cov      - Run pytest with coverage report"
 	@echo "  setup-test    - Install test deps and generate test files"
 	@echo "  lint          - Run Ruff linter"
@@ -43,7 +43,8 @@ requirements:
 	pip-compile --output-file=requirements.txt pyproject.toml
 
 test:
-	pytest -v tests/
+	pytest -v --html=.report.html tests/
+	open .report.html
 
 test-cov:
 	pytest --cov=cloudmesh.ai.cmc --cov-report=term-missing tests/
@@ -55,7 +56,7 @@ typecheck:
 	mypy src tests
 
 setup-test:
-	$(PIP) install pytest pytest-mock pytest-cov
+	$(PIP) install pytest pytest-mock pytest-cov pytest-html
 	chmod +x setup_tests.sh
 	./setup_tests.sh
 
@@ -89,7 +90,7 @@ uninstall-all:
 
 clean:
 	@echo "Cleaning artifacts and temporary test plugins..."
-	rm -rf build/ dist/ *.egg-info .pytest_cache .coverage
+	rm -rf build/ dist/ *.egg-info .pytest_cache .coverage .report.html
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	find . -type f -name "*.pyc" -delete
 	rm -rf tmp/cloudmesh-ai-*

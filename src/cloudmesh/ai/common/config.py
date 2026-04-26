@@ -12,6 +12,7 @@ import copy
 from pathlib import Path
 from typing import Any, Dict, Optional
 from cloudmesh.ai.common import logging as ai_log
+from cloudmesh.ai.common import DotDict
 
 logger = ai_log.get_logger("common.config")
 
@@ -26,7 +27,7 @@ class Config:
 
     def __init__(self, config_path: Optional[Path] = None):
         self.path = config_path or self.DEFAULT_CONFIG_PATH
-        self.data = copy.deepcopy(self.DEFAULTS)
+        self.data = DotDict(copy.deepcopy(self.DEFAULTS))
         self._load_config()
 
     def _load_config(self):
@@ -35,23 +36,15 @@ class Config:
                 with open(self.path, "r") as f:
                     user_config = yaml.safe_load(f)
                     if user_config:
-                        self._deep_update(self.data, user_config)
+                        self.data.update(user_config)
             except Exception as e:
                 logger.warning(f"Could not load config file {self.path}: {e}")
-
-    def _deep_update(self, base: Dict, update: Dict):
-        for k, v in update.items():
-            if isinstance(v, dict) and k in base and isinstance(base[k], dict):
-                self._deep_update(base[k], v)
-            else:
-                base[k] = v
 
     def get(self, key_path: str, default: Any = None) -> Any:
         """Get a value from the config using a dot-separated path (e.g., 'telemetry.enabled').
         Environment variables can override config values.
         """
         # 1. Check for environment variable override
-        # We use a generic AI_ prefix for common config, or allow package-specific prefixes
         env_var = f"AI_{key_path.replace('.', '_').upper()}"
         env_val = os.environ.get(env_var)
         if env_val is not None:
@@ -66,11 +59,12 @@ class Config:
             else:
                 return env_val
 
-        # 2. Fallback to config data
-        keys = key_path.split(".")
-        val = self.data
+        # 2. Fallback to config data using DotDict's nested access
         try:
-            for k in keys:
+            # We can't use getattr(self.data, key_path) because key_path has dots
+            # But we can use the same logic as YamlDB or just iterate
+            val = self.data
+            for k in key_path.split("."):
                 val = val[k]
             return val
         except (KeyError, TypeError):
@@ -90,7 +84,7 @@ class Config:
         val = self.data
         for k in keys[:-1]:
             if k not in val or not isinstance(val[k], dict):
-                val[k] = {}
+                val[k] = DotDict()
             val = val[k]
         val[keys[-1]] = value
 

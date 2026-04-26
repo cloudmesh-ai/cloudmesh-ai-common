@@ -27,5 +27,4 @@ def HEADING(txt=None, c="#", color="HEADER"):
         msg = "{}\n {} {} {}".format(txt, method, filename, line)
 
     print()
-    # Use the banner utility from io.py
     banner(msg)
