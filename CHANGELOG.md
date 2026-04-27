@@ -2,6 +2,14 @@
 
 All notable changes to `cloudmesh-ai-common` will be documented in this file.
 
+## [7.0.5.dev1] - 2026-04-26
+
+### Added
+- **Advanced Console UI**: Expanded the `Console` class with high-impact visual components:
+    - `banner()`: For creating highlighted information panels.
+    - `table()`: For standardized, professional data presentation.
+    - `bold()`: For semantic text emphasis.
+
 ## [7.0.4.dev1] - 2026-04-26
 
 ### Added

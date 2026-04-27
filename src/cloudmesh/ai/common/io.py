@@ -12,6 +12,9 @@ import paramiko
 from rich.console import Console as RichConsole
 from rich.panel import Panel
 from rich.box import ROUNDED
+from rich.padding import Padding
+from rich.table import Table
+from rich.status import Status
 
 class Console(RichConsole):
     """Custom Console with convenience methods for styled output."""
@@ -35,6 +38,55 @@ class Console(RichConsole):
     def ok(self, message: str):
         """Prints a success message in green."""
         self.print(f"[green]OK: {message}[/green]")
+
+    def bold(self, message: str):
+        """Prints a message in bold."""
+        self.print(f"[bold]{message}[/bold]")
+
+    def create_banner(self, title: str, content: Optional[str] = None):
+        """
+        Creates a banner Panel without printing it.
+        """
+        panel_content = content if content else ""
+        styled_title = f"[bold magenta]{title}[/bold magenta]" if title else ""
+        return Panel(
+            panel_content,
+            title=styled_title,
+            box=ROUNDED,
+            expand=True,
+            border_style="bold blue"
+        )
+
+    def banner(self, title: str, content: Optional[str] = None, padding: tuple = (0, 0, 0, 2)):
+        """
+        Creates a banner with a title and optional content using a rich Panel and prints it.
+        """
+        panel = self.create_banner(title, content)
+        self.print(Padding(panel, *padding))
+
+    def table(self, headers: list, data: list, title: Optional[str] = None):
+        """
+        Prints a formatted table.
+        Args:
+            headers: List of column headers.
+            data: List of rows (each row is a list/tuple of values).
+            title: Optional title for the table.
+        """
+        table = Table(title=title, box=ROUNDED, expand=True)
+        for header in headers:
+            table.add_column(header)
+        
+        for row in data:
+            table.add_row(*[str(item) for item in row])
+        
+        self.print(table)
+
+    def status(self, message: str):
+        """
+        Returns a status spinner context manager.
+        Usage: with console.status("Loading..."):
+        """
+        return Status(f"[bold blue]{message}[/bold blue]", console=self)
 
     def ynchoice(self, message: str, default: bool = True) -> bool:
         """Asks a yes/no question and returns a boolean."""
@@ -137,25 +189,6 @@ def create_benchmark_yaml(path: str, n: int) -> None:
     with open(location, "w") as yaml_file:
         yaml.dump(cm, yaml_file, default_flow_style=False)
 
-def banner(title: str, content: Optional[str] = None):
-    """
-    Creates a banner with a title and optional content using a rich Panel.
-    Returns the Panel object.
-    """
-    # If content is None, we use an empty string to ensure the panel renders
-    panel_content = content if content else ""
-    
-    # We use markup in the title to set the style since title_style is not a valid argument
-    styled_title = f"[bold magenta]{title}[/bold magenta]" if title else ""
-    panel = Panel(
-        panel_content,
-        title=styled_title,
-        box=ROUNDED,
-        expand=True,
-        border_style="bold blue"
-    )
-    
-    return panel
 
 def create_benchmark_file(path: str, n: int) -> int:
     """Creates a file of a given size in binary megabytes.
