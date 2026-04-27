@@ -20,7 +20,7 @@ class Config:
     """Handles configuration for AI packages from a YAML file."""
     
     # Default path can be overridden by subclasses or during initialization
-    DEFAULT_CONFIG_PATH = Path("~/.config/cloudmesh/ai/common.yaml").expanduser()
+    DEFAULT_CONFIG_PATH = Path("~/.config/cloudmesh/cmc.yaml").expanduser()
     
     DEFAULTS = {}
     SCHEMA = {}
