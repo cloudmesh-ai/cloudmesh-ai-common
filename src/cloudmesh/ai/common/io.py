@@ -62,7 +62,7 @@ class Console(RichConsole):
         Creates a banner with a title and optional content using a rich Panel and prints it.
         """
         panel = self.create_banner(title, content)
-        self.print(Padding(panel, *padding))
+        self.print(Padding(panel, padding))
 
     def table(self, headers: list, data: list, title: Optional[str] = None):
         """
@@ -102,6 +102,10 @@ class Console(RichConsole):
             self.print("[red]Please enter 'y' or 'n'.[/red]")
 
 console = Console()
+
+def banner(title: str, content: Optional[str] = None):
+    """Standalone wrapper for console.banner to maintain backward compatibility."""
+    console.banner(title, content)
 
 def readfile(path: str) -> str:
     """Reads the content of a file.

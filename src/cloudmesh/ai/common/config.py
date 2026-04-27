@@ -97,4 +97,3 @@ class Config:
         except Exception as e:
             logger.error(f"Could not save config file {self.path}: {e}")
             raise
-</write_to_file>
