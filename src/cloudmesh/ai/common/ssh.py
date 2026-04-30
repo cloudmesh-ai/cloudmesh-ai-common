@@ -6,6 +6,12 @@ class SSHConfig:
     """Helper class to parse and manage SSH configuration."""
     
     def __init__(self, config_path=None):
+        """Initialize the SSHConfig object.
+
+        Args:
+            config_path: Path to the SSH config file. 
+                Defaults to ~/.ssh/config.
+        """
         if config_path is None:
             config_path = os.path.expanduser("~/.ssh/config")
         
@@ -14,7 +20,11 @@ class SSHConfig:
         self._parse_config()
 
     def _parse_config(self):
-        """Parses the SSH config file into a dictionary."""
+        """Parses the SSH config file into a dictionary.
+
+        The method reads the config file and splits it into blocks based on the 
+        'Host' keyword, then extracts key-value pairs for each host.
+        """
         if not os.path.exists(self.config_path):
             return
 
@@ -62,7 +72,15 @@ class SSHConfig:
             pass
 
     def username(self, host):
-        """Returns the username for the given host, falling back to global config or local user."""
+        """Returns the username for the given host, falling back to global config or local user.
+
+        Args:
+            host: The host identifier to look up.
+
+        Returns:
+            The username associated with the host, the global user, 
+            or the local system user.
+        """
         # 1. Specific host match
         if host in self.hosts and 'user' in self.hosts[host]:
             return self.hosts[host]['user']
@@ -75,7 +93,14 @@ class SSHConfig:
         return os.environ.get("USER", "user")
 
     def hostname(self, host):
-        """Returns the actual HostName for the given host."""
+        """Returns the actual HostName for the given host.
+
+        Args:
+            host: The host identifier to look up.
+
+        Returns:
+            The actual hostname or IP address associated with the host identifier.
+        """
         if host in self.hosts and 'hostname' in self.hosts[host]:
             return self.hosts[host]['hostname']
         
@@ -85,5 +110,9 @@ class SSHConfig:
         return host
 
     def yaml(self):
-        """Returns the parsed SSH configuration in YAML format."""
+        """Returns the parsed SSH configuration in YAML format.
+
+        Returns:
+            A YAML string representation of the parsed hosts dictionary.
+        """
         return yaml.dump(self.hosts, default_flow_style=False)

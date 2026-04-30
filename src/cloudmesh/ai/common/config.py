@@ -26,11 +26,18 @@ class Config:
     SCHEMA = {}
 
     def __init__(self, config_path: Optional[Path] = None):
+        """Initialize the Config object.
+
+        Args:
+            config_path: Optional path to the configuration file. 
+                Defaults to DEFAULT_CONFIG_PATH.
+        """
         self.path = config_path or self.DEFAULT_CONFIG_PATH
         self.data = DotDict(copy.deepcopy(self.DEFAULTS))
         self._load_config()
 
     def _load_config(self):
+        """Loads the configuration from the YAML file into the data dictionary."""
         if self.path.exists():
             try:
                 with open(self.path, "r") as f:
@@ -42,7 +49,15 @@ class Config:
 
     def get(self, key_path: str, default: Any = None) -> Any:
         """Get a value from the config using a dot-separated path (e.g., 'telemetry.enabled').
+
         Environment variables can override config values.
+
+        Args:
+            key_path: Dot-separated path to the configuration value.
+            default: Value to return if the key is not found. Defaults to None.
+
+        Returns:
+            The configuration value if found, otherwise the default value.
         """
         # 1. Check for environment variable override
         env_var = f"AI_{key_path.replace('.', '_').upper()}"
@@ -71,14 +86,27 @@ class Config:
             return default
 
     def validate(self, key_path: str, value: Any):
-        """Validates a configuration value against the schema if it exists."""
+        """Validates a configuration value against the schema if it exists.
+
+        Args:
+            key_path: Dot-separated path to the configuration value.
+            value: The value to validate.
+
+        Raises:
+            TypeError: If the value does not match the expected type in the schema.
+        """
         if key_path in self.SCHEMA:
             expected_type = self.SCHEMA[key_path]["type"]
             if not isinstance(value, expected_type):
                 raise TypeError(f"Invalid type for '{key_path}'. Expected {expected_type.__name__}, got {type(value).__name__}.")
 
     def set(self, key_path: str, value: Any):
-        """Set a value in the config using a dot-separated path (e.g., 'telemetry.enabled')."""
+        """Set a value in the config using a dot-separated path (e.g., 'telemetry.enabled').
+
+        Args:
+            key_path: Dot-separated path to the configuration value.
+            value: The value to set.
+        """
         self.validate(key_path, value)
         keys = key_path.split(".")
         val = self.data
@@ -89,7 +117,11 @@ class Config:
         val[keys[-1]] = value
 
     def save(self):
-        """Saves the current configuration to the YAML file."""
+        """Saves the current configuration to the YAML file.
+
+        Raises:
+            OSError: If the configuration file cannot be written.
+        """
         try:
             self.path.parent.mkdir(parents=True, exist_ok=True)
             with open(self.path, "w") as f:

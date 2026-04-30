@@ -14,13 +14,27 @@ class RemoteExecutor:
     """
 
     def __init__(self, host: str, username: Optional[str] = None, key_filename: Optional[str] = None):
+        """Initialize the RemoteExecutor.
+
+        Args:
+            host: The hostname or IP address of the remote host.
+            username: The SSH username. Defaults to None.
+            key_filename: Path to the private key file. Defaults to None.
+        """
         self.host = host
         self.username = username
         self.key_filename = key_filename
         self.client: Optional[paramiko.SSHClient] = None
 
     def __enter__(self):
-        """Establishes the SSH connection."""
+        """Establishes the SSH connection.
+
+        Returns:
+            The RemoteExecutor instance.
+
+        Raises:
+            paramiko.SSHException: If the connection fails.
+        """
         try:
             self.client = paramiko.SSHClient()
             self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -35,7 +49,13 @@ class RemoteExecutor:
             raise
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        """Closes the SSH connection."""
+        """Closes the SSH connection.
+
+        Args:
+            exc_type: The type of the exception that occurred.
+            exc_val: The instance of the exception that occurred.
+            exc_tb: The traceback of the exception that occurred.
+        """
         if self.client:
             self.client.close()
 
@@ -62,7 +82,16 @@ class RemoteExecutor:
             raise
 
     def upload(self, local_path: str, remote_path: str):
-        """Uploads a local file to the remote host using SFTP."""
+        """Uploads a local file to the remote host using SFTP.
+
+        Args:
+            local_path: Path to the local file to upload.
+            remote_path: Path on the remote host where the file should be saved.
+
+        Raises:
+            RuntimeError: If the executor is not used as a context manager.
+            IOError: If the upload fails.
+        """
         if not self.client:
             raise RuntimeError("RemoteExecutor must be used as a context manager.")
 
@@ -75,7 +104,16 @@ class RemoteExecutor:
             raise
 
     def download(self, remote_path: str, local_path: str):
-        """Downloads a remote file to the local host using SFTP."""
+        """Downloads a remote file to the local host using SFTP.
+
+        Args:
+            remote_path: Path to the file on the remote host.
+            local_path: Path on the local host where the file should be saved.
+
+        Raises:
+            RuntimeError: If the executor is not used as a context manager.
+            IOError: If the download fails.
+        """
         if not self.client:
             raise RuntimeError("RemoteExecutor must be used as a context manager.")
 
@@ -88,9 +126,17 @@ class RemoteExecutor:
             raise
 
     def write_remote_file(self, content: str, remote_path: str):
-        """
-        Writes a string directly to a remote file.
+        """Writes a string directly to a remote file.
+
         Useful for creating scripts or config files on the fly.
+
+        Args:
+            content: The string content to write.
+            remote_path: Path on the remote host where the file should be created.
+
+        Raises:
+            RuntimeError: If the executor is not used as a context manager.
+            IOError: If the write operation fails.
         """
         if not self.client:
             raise RuntimeError("RemoteExecutor must be used as a context manager.")

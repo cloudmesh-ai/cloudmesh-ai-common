@@ -4,6 +4,7 @@ Provides helpers for path expansion, YAML handling, and benchmark file creation.
 """
 
 import os
+import sys
 import yaml
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -20,32 +21,70 @@ class Console(RichConsole):
     """Custom Console with convenience methods for styled output."""
 
     def error(self, message: str):
-        """Prints an error message in red."""
+        """Prints an error message in red.
+
+        Args:
+            message: The error message to print.
+        """
         self.print(f"[red]ERROR: {message}[/red]")
 
     def warning(self, message: str):
-        """Prints a warning message in yellow."""
+        """Prints a warning message in yellow.
+
+        Args:
+            message: The warning message to print.
+        """
         self.print(f"[yellow]WARNING: {message}[/yellow]")
 
     def msg(self, message: str):
-        """Prints a message in blue."""
+        """Prints a message in blue.
+
+        Args:
+            message: The message to print.
+        """
         self.print(f"[blue]MSG: {message}[/blue]")
 
+    def info(self, message: str):
+        """Prints an info message in magenta.
+
+        Args:
+            message: The info message to print.
+        """
+        self.print(f"[magenta]INFO: {message}[/magenta]")
+
     def note(self, message: str):
-        """Prints a note in cyan."""
+        """Prints a note in cyan.
+
+        Args:
+            message: The note to print.
+        """
         self.print(f"[cyan]NOTE: {message}[/cyan]")
 
     def ok(self, message: str):
-        """Prints a success message in green."""
+        """Prints a success message in green.
+
+        Args:
+            message: The success message to print.
+        """
         self.print(f"[green]OK: {message}[/green]")
 
     def bold(self, message: str):
-        """Prints a message in bold."""
+        """Prints a message in bold.
+
+        Args:
+            message: The message to print.
+        """
         self.print(f"[bold]{message}[/bold]")
 
     def create_banner(self, title: str, content: Optional[str] = None):
-        """
-        Creates a banner Panel without printing it.
+        """Creates a banner Panel without printing it.
+
+        Args:
+            title: The title of the banner.
+            content: Optional content to display inside the banner.
+
+        Returns:
+            A rich.panel.Panel object.
         """
         panel_content = content if content else ""
         styled_title = f"[bold magenta]{title}[/bold magenta]" if title else ""
@@ -58,19 +97,23 @@ class Console(RichConsole):
         )
 
     def banner(self, title: str, content: Optional[str] = None, padding: tuple = (0, 0, 0, 2)):
-        """
-        Creates a banner with a title and optional content using a rich Panel and prints it.
+        """Creates a banner with a title and optional content using a rich Panel and prints it.
+
+        Args:
+            title: The title of the banner.
+            content: Optional content to display inside the banner.
+            padding: Padding around the panel. Defaults to (0, 0, 0, 2).
         """
         panel = self.create_banner(title, content)
         self.print(Padding(panel, padding))
 
     def table(self, headers: list, data: list, title: Optional[str] = None):
-        """
-        Prints a formatted table.
+        """Prints a formatted table.
+
         Args:
             headers: List of column headers.
             data: List of rows (each row is a list/tuple of values).
-            title: Optional title for the table.
+            title: Optional title for the table. Defaults to None.
         """
         table = Table(title=title, box=ROUNDED, expand=True)
         for header in headers:
@@ -82,14 +125,30 @@ class Console(RichConsole):
         self.print(table)
 
     def status(self, message: str):
-        """
-        Returns a status spinner context manager.
-        Usage: with console.status("Loading..."):
+        """Returns a status spinner context manager.
+
+        Usage:
+            with console.status("Loading..."):
+                do_work()
+
+        Args:
+            message: The message to display next to the spinner.
+
+        Returns:
+            A rich.status.Status object.
         """
         return Status(f"[bold blue]{message}[/bold blue]", console=self)
 
     def ynchoice(self, message: str, default: bool = True) -> bool:
-        """Asks a yes/no question and returns a boolean."""
+        """Asks a yes/no question and returns a boolean.
+
+        Args:
+            message: The question to ask the user.
+            default: The default value if the user presses Enter. Defaults to True.
+
+        Returns:
+            True if the user answers yes, False otherwise.
+        """
         suffix = " [Y/n]" if default else " [y/N]"
         while True:
             response = input(f"{message}{suffix} ").strip().lower()
@@ -101,10 +160,30 @@ class Console(RichConsole):
                 return False
             self.print("[red]Please enter 'y' or 'n'.[/red]")
 
+    def top(self, lines: int):
+        """Moves the cursor up by the specified number of lines.
+
+        Args:
+            lines: The number of lines to move the cursor up.
+        """
+        if lines > 0:
+            sys.stdout.write(f"\033[{lines}F")
+            sys.stdout.flush()
+
+    def left(self):
+        """Moves the cursor to the beginning of the current line."""
+        sys.stdout.write("\r")
+        sys.stdout.flush()
+
 console = Console()
 
 def banner(title: str, content: Optional[str] = None):
-    """Standalone wrapper for console.banner to maintain backward compatibility."""
+    """Standalone wrapper for console.banner to maintain backward compatibility.
+
+    Args:
+        title: The title of the banner.
+        content: Optional content to display inside the banner.
+    """
     console.banner(title, content)
 
 def readfile(path: str) -> str:
@@ -118,6 +197,18 @@ def readfile(path: str) -> str:
     """
     with open(path, 'r') as f:
         return f.read()
+
+def writefile(path: str, content: str) -> None:
+    """Writes content to a file.
+    
+    Args:
+        path: Path to the file.
+        content: The content to write.
+    """
+    path_obj = Path(path_expand(path))
+    path_obj.parent.mkdir(parents=True, exist_ok=True)
+    with open(path_obj, 'w') as f:
+        f.write(content)
 
 def path_expand(text: str, slashreplace: bool = True) -> str:
     """Expands a path string by resolving '~', environment variables, and relative links.
