@@ -13,6 +13,7 @@ import paramiko
 from rich.console import Console as RichConsole
 from rich.panel import Panel
 from rich.box import ROUNDED
+from rich.align import Align
 from rich.padding import Padding
 from rich.table import Table
 from rich.status import Status
@@ -86,8 +87,14 @@ class Console(RichConsole):
         Returns:
             A rich.panel.Panel object.
         """
-        panel_content = content if content else ""
-        styled_title = f"[bold magenta]{title}[/bold magenta]" if title else ""
+        if not content and title:
+            # Color the title and center it when it's used as the main content
+            panel_content = Align.center(f"[bold magenta]{title}[/bold magenta]")
+            styled_title = ""
+        else:
+            panel_content = content if content else ""
+            styled_title = f"[bold magenta]{title}[/bold magenta]" if title else ""
+
         return Panel(
             panel_content,
             title=styled_title,
@@ -287,11 +294,11 @@ def create_benchmark_yaml(path: str, n: int) -> None:
 
 def create_benchmark_file(path: str, n: int) -> int:
     """Creates a file of a given size in binary megabytes.
-
+    
     Args:
         path: Path where the benchmark file should be created.
         n: Size of the file in megabytes.
-
+    
     Returns:
         The actual size of the created file in megabytes.
     """
@@ -302,3 +309,62 @@ def create_benchmark_file(path: str, n: int) -> int:
     
     s = os.path.getsize(location)
     return int(s / 1048576.0)
+
+
+class Editor:
+    """Utility to open files in the default system editor."""
+
+    def edit(self, path: str):
+        """Opens the specified file in the default editor and brings it to the front.
+
+        Args:
+            path: Path to the file to edit.
+        """
+        expanded_path = path_expand(path)
+        editor = os.environ.get("EDITOR")
+        
+        print(f"[DEBUG] Editor.edit called for path: {expanded_path}")
+        print(f"[DEBUG] EDITOR env var: {editor}")
+
+        if os.name == 'posix':
+            import subprocess
+            try:
+                if sys.platform == 'darwin':
+                    if editor:
+                        if '/' not in editor:
+                            cmd = ['open', '-a', editor, expanded_path]
+                            print(f"[DEBUG] Executing command: {' '.join(cmd)}")
+                            subprocess.run(cmd, check=True)
+                        else:
+                            cmd = [editor, expanded_path]
+                            print(f"[DEBUG] Executing command: {' '.join(cmd)}")
+                            subprocess.run(cmd, check=True)
+                    else:
+                        cmd = ['open', expanded_path]
+                        print(f"[DEBUG] Executing command: {' '.join(cmd)}")
+                        subprocess.run(cmd, check=True)
+                else:
+                    if editor:
+                        cmd = [editor, expanded_path]
+                        print(f"[DEBUG] Executing command: {' '.join(cmd)}")
+                        subprocess.run(cmd, check=True)
+                    else:
+                        cmd = ['xdg-open', expanded_path]
+                        print(f"[DEBUG] Executing command: {' '.join(cmd)}")
+                        subprocess.run(cmd, check=True)
+            except Exception as e:
+                print(f"[ERROR] Editor.edit failed: {e}")
+                console.error(f"Failed to open editor: {e}")
+        elif os.name == 'nt':
+            try:
+                if editor:
+                    import subprocess
+                    cmd = [editor, expanded_path]
+                    print(f"[DEBUG] Executing command: {' '.join(cmd)}")
+                    subprocess.run(cmd, check=True)
+                else:
+                    print(f"[DEBUG] Using os.startfile for {expanded_path}")
+                    os.startfile(expanded_path)
+            except Exception as e:
+                print(f"[ERROR] Editor.edit failed: {e}")
+                console.error(f"Failed to open editor: {e}")
