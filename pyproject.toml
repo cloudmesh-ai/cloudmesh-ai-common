@@ -9,6 +9,7 @@ description = "CMC: Cloudmesh Command for AI"
 license = {text = "Apache-2.0"}
 keywords = ["cmc", "extension", "cli", "click", "cloudmesh"]
 dependencies = [
+    "cloudmesh-common",
     "click",
     "rich",
     "shellingham",
