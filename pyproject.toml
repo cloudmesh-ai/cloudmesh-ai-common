@@ -18,6 +18,7 @@ dependencies = [
     "tzlocal",
     "paramiko",
     "aiofiles",
+    "pyfiglet",
 ]
 
 [project.optional-dependencies]
