@@ -18,9 +18,8 @@ from getpass import getpass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union, Tuple
 
-import pyfiglet
 import requests
-from cloudmesh.ai.common.io import console as Console
+from cloudmesh.ai.common.io import console as Console, path_expand, banner
 
 
 @contextmanager
@@ -185,23 +184,6 @@ def is_cmd_exe() -> bool:
     return os.environ.get("OS") == "Windows_NT"
 
 
-def path_expand(text: str, slashreplace: bool = True) -> str:
-    """returns a string with expanded variable.
-
-    Args:
-        text: the path to be expanded
-        slashreplace: if True, returns backslashes on Windows
-    """
-    if not text:
-        return ""
-    
-    expanded = os.path.expandvars(os.path.expanduser(text))
-    path_obj = Path(expanded).resolve()
-    
-    if slashreplace and platform.system() == "Windows":
-        return str(path_obj)
-    
-    return path_obj.as_posix()
 
 
 def convert_from_unicode(data: Any) -> Any:
@@ -241,66 +223,9 @@ def yn_choice(message: str, default: str = "y", tries: Optional[int] = None) -> 
         return False
 
 
-def str_banner(
-    txt: Optional[str] = None,
-    c: str = "-",
-    prefix: str = "#",
-    debug: bool = True,
-    label: Optional[str] = None,
-    padding: bool = False,
-    figlet: bool = False,
-    font: str = "big",
-) -> str:
-    """prints a banner of the form with a frame of # around the txt"""
-    output = ""
-    if debug:
-        output = "\n"
-        output += f"{prefix} {70 * c}\n"
-        if padding:
-            output += f"{prefix}\n"
-        if label is not None:
-            output += f"{prefix} {label}\n"
-            output += f"{prefix} {70 * c}\n"
-
-        if txt is not None:
-            if figlet:
-                txt = pyfiglet.figlet_format(txt, font=font)
-
-            for line in txt.splitlines():
-                output += f"{prefix} {line}\n"
-            if padding:
-                output += f"{prefix}\n"
-            output += f"{prefix} {70 * c}\n"
-
-    return output
 
 
-def banner(
-    txt: Optional[str] = None,
-    c: str = "-",
-    prefix: str = "#",
-    debug: bool = True,
-    label: Optional[str] = None,
-    color: str = "blue",
-    padding: bool = False,
-    figlet: bool = False,
-    font: str = "big",
-) -> None:
-    """prints a banner of the form with a frame of # around the txt"""
-    output = str_banner(
-        txt=txt,
-        c=c,
-        prefix=prefix,
-        debug=debug,
-        label=label,
-        padding=padding,
-        figlet=figlet,
-        font=font,
-    )
-    Console.cprint(output, color, "")
-
-
-def HEADING(txt: Optional[str] = None, c: str = "#", color: str = "HEADER") -> None:
+def HEADING(txt: Optional[str] = None, c: str = "#", color: str = "magenta") -> None:
     """Prints a message to stdout with #### surrounding it."""
     frame = inspect.getouterframes(inspect.currentframe())
     filename = frame[1][1].replace(os.getcwd(), "")
@@ -363,10 +288,6 @@ def copy_files(files_glob: str, source_dir: Union[str, Path], dest_dir: Union[st
         shutil.copy2(filename, dst)
 
 
-def appendfile(filename: Union[str, Path], content: str) -> None:
-    """writes the content into the file (append)"""
-    with open(path_expand(str(filename)), "a", encoding="utf-8") as outfile:
-        outfile.write(content)
 
 
 def writefd(filename: str, content: str, mode: str = "w", flags: int = os.O_RDWR | os.O_CREAT, mask: int = 0o600) -> None:
@@ -379,14 +300,6 @@ def writefd(filename: str, content: str, mode: str = "w", flags: int = os.O_RDWR
         outfile.truncate()
 
 
-def sudo_readfile(filename: str, split: bool = True, trim: bool = False) -> Union[str, List[str]]:
-    """Reads the content of the file as sudo and returns the result"""
-    result = subprocess.getoutput(f"sudo cat {filename}")
-    if trim:
-        result = result.rstrip()
-    if split:
-        result = result.split("\n")
-    return result
 
 
 def generate_password(length: int = 8, lower: bool = True, upper: bool = True, number: bool = True) -> str:
@@ -411,7 +324,7 @@ def str_bool(value: Any) -> bool:
 
 def get_password(prompt: str) -> str:
     """gets a password from the user securely"""
-    from cloudmesh.ai.common.systeminfo import os_is_windows
+    from cloudmesh.ai.common.sys import os_is_windows
 
     try:
         if os_is_windows() and is_gitbash():
@@ -442,33 +355,3 @@ def get_password(prompt: str) -> str:
         raise ValueError("Detected Ctrl + C. Quitting...")
 
 
-def flatten(d: Any, parent_key: str = "", sep: str = "__") -> Union[Dict[str, Any], List[Any]]:
-    """flattens the dict into a one dimensional dictionary
-
-    Args:
-        d: multidimensional dict or list
-        parent_key: replaces from the parent key
-        sep: the separation character used when fattening. the default is __
-
-    Returns:
-        the flattened dict or list
-    """
-    if isinstance(d, list):
-        return [flatten(entry, parent_key=parent_key, sep=sep) for entry in d]
-    
-    if not isinstance(d, Mapping):
-        return d
-
-    items = []
-    for k, v in d.items():
-        new_key = f"{parent_key}{sep}{k}" if parent_key else k
-        if isinstance(v, Mapping):
-            items.extend(flatten(v, new_key, sep=sep).items())
-        elif isinstance(v, list):
-            # For lists, we keep them as is or could flatten them with indices
-            # Following the original implementation's behavior
-            items.append((new_key, v))
-        else:
-            items.append((new_key, v))
-
-    return dict(items)

@@ -13,8 +13,9 @@ import psutil
 import requests
 from cloudmesh.ai.common.io import Console
 from cloudmesh.ai.common.dotdict import DotDict
-from cloudmesh.ai.common.systeminfo import get_platform, os_is_linux, os_is_mac, os_is_windows
-from cloudmesh.ai.common.util import is_gitbash, path_expand
+from cloudmesh.ai.common.sys import get_platform, os_is_linux, os_is_mac, os_is_windows
+from cloudmesh.ai.common.util import is_gitbash
+from cloudmesh.ai.common.io import path_expand
 from cloudmesh.ai.common.io import readfile, writefile
 
 import shlex

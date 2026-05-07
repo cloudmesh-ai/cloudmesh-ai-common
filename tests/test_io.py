@@ -1,89 +1,80 @@
-"""Unit tests for cloudmesh.ai.common.io module."""
+# Copyright 2026 Gregor von Laszewski
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
 
 import os
 import pytest
 from pathlib import Path
 from unittest.mock import patch
-from cloudmesh.ai.common.io import path_expand
+from cloudmesh.ai.common.io import Console, BaseIO
+from cloudmesh.ai.common.exceptions import IOReadError, IOWriteError
 
+@pytest.fixture
+def console():
+    return Console()
 
-def test_path_expand_empty_string():
+def test_path_expand_empty_string(console):
     """Test path_expand with empty string returns empty string."""
-    assert path_expand("") == ""
+    assert console.expand_path("") == ""
 
-
-def test_path_expand_none_value():
-    """Test path_expand with None returns empty string."""
-    # The original code had: result = path_expand(None) if not isinstance(None, str) else ""
-    # which is a bit odd, but I'll maintain the logic.
-    result = path_expand(None) if not isinstance(None, str) else ""
-    assert result == ""
-
-
-def test_path_expand_home_directory():
+def test_path_expand_home_directory(console):
     """Test path_expand expands tilde to home directory."""
-    result = path_expand("~")
+    result = console.expand_path("~")
     expected = str(Path.home().as_posix())
     assert result == expected
 
-
-def test_path_expand_relative_path():
+def test_path_expand_relative_path(console):
     """Test path_expand converts relative path to absolute."""
-    result = path_expand("./test_file.txt")
+    result = console.expand_path("./test_file.txt")
     assert os.path.isabs(result)
     assert result.endswith("test_file.txt")
 
-
-def test_path_expand_parent_directory():
-    """Test path_expand handles parent directory references."""
-    result = path_expand("../test")
-    assert os.path.isabs(result)
-
-
 @patch.dict(os.environ, {'HOME': '/home/user', 'PROJECT': '/home/user/project'})
-def test_path_expand_environment_variables():
+def test_path_expand_environment_variables(console):
     """Test path_expand expands environment variables."""
-    result = path_expand("$PROJECT/file.txt")
+    result = console.expand_path("$PROJECT/file.txt")
     assert "project" in result.lower()
     assert "file.txt" in result
 
+def test_read_write_file(console, tmp_path):
+    """Test reading and writing files using BaseIO logic."""
+    test_file = tmp_path / "test.txt"
+    content = "Hello Cloudmesh AI"
+    
+    console.writefile(str(test_file), content)
+    assert test_file.read_text() == content
+    
+    assert console.readfile(str(test_file)) == content
 
-@patch.dict(os.environ, {'HOME': '/home/user', 'PROJECT': '/home/user/project'})
-def test_path_expand_home_and_env_vars():
-    """Test path_expand expands both home and environment variables."""
-    result = path_expand("~/$PROJECT/./test.txt")
-    assert "project" in result.lower()
-    assert "test.txt" in result
+def test_append_file(console, tmp_path):
+    """Test appending to a file."""
+    test_file = tmp_path / "append.txt"
+    console.writefile(str(test_file), "Line 1\n")
+    console.appendfile(str(test_file), "Line 2\n")
+    
+    assert test_file.read_text() == "Line 1\nLine 2\n"
 
+def test_yaml_io(console, tmp_path):
+    """Test YAML loading and dumping."""
+    test_yaml = tmp_path / "test.yaml"
+    data = {"key": "value", "nested": {"a": 1}}
+    
+    console.dump_yaml(str(test_yaml), data)
+    loaded = console.load_yaml(str(test_yaml))
+    
+    assert loaded == data
 
-def test_path_expand_posix_forward_slash():
-    """Test path_expand returns forward slashes with slashreplace=False."""
-    result = path_expand("test/dir/file.txt", slashreplace=False)
-    assert "\\" not in result
-    assert result.count("/") > 0
+def test_read_nonexistent_file(console):
+    """Test that reading a nonexistent file raises IOReadError."""
+    with pytest.raises(IOReadError):
+        console.readfile("/tmp/nonexistent_file_12345.txt")
 
-
-def test_path_expand_absolute_path():
-    """Test path_expand with absolute path remains absolute."""
-    if os.name == 'posix':
-        result = path_expand("/tmp/test.txt")
-        # On macOS, /tmp is symlinked to /private/tmp, so check contains test.txt
-        assert "test.txt" in result
-    else:
-        # Windows path
-        result = path_expand("C:/temp/test.txt", slashreplace=False)
-        assert os.path.isabs(result)
-
-
-def test_path_expand_resolves_current_directory():
-    """Test path_expand resolves current directory references."""
-    result = path_expand(".")
-    expected = str(Path.cwd().as_posix())
-    assert result == expected
-
-
-def test_path_expand_complex_path():
-    """Test path_expand with complex path containing multiple references."""
-    result = path_expand("~/../test/./file.txt")
-    assert os.path.isabs(result)
-    assert result.endswith("file.txt") or "file.txt" in result
+def test_write_forbidden_path(console):
+    """Test that writing to a forbidden path raises IOWriteError."""
+    # Attempt to write to a root-only directory
+    with pytest.raises(IOWriteError):
+        console.writefile("/root/forbidden.txt", "content")

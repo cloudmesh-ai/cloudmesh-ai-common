@@ -19,6 +19,8 @@ dependencies = [
     "paramiko",
     "aiofiles",
     "pyfiglet",
+    "sshconf",
+    "fabric",
 ]
 
 [project.optional-dependencies]

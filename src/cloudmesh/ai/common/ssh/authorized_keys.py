@@ -7,65 +7,58 @@
 #     http://www.apache.org/licenses/LICENSE-2.0
 
 import io
-import subprocess
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 from cloudmesh.ai.common import logging as ai_log
+from cloudmesh.ai.common.ssh.base import SSHBase
 
 logger = ai_log.get_logger("common.ssh.authorized_keys")
 
-def get_fingerprint_from_public_key(pubkey: str) -> str:
-    """Generate the fingerprint of a public key.
 
-    Args:
-        pubkey (str): the value of the public key
-
-    Returns:
-        str: fingerprint
-    """
-    try:
-        # Use ssh-keygen -l -f /dev/stdin to avoid creating temporary files
-        process = subprocess.run(
-            ["ssh-keygen", "-l", "-f", "/dev/stdin"],
-            input=pubkey,
-            capture_output=True,
-            text=True,
-            check=True
-        )
-        output = process.stdout.strip()
-        # Output format: "2048 SHA256:abc... user@host (RSA)"
-        parts = output.split(' ')
-        if len(parts) >= 2:
-            return parts[1]
-        return output
-    except (subprocess.CalledProcessError, FileNotFoundError) as e:
-        logger.error(f"Failed to get fingerprint for public key: {e}")
-        return ""
-
-
-class AuthorizedKeys:
+class AuthorizedKeys(SSHBase):
     """Class to manage authorized keys."""
 
-    def __init__(self):
+    def __init__(self, debug: bool = False):
+        super().__init__(debug=debug)
         self._order: Dict[int, str] = {}
         self._keys: Dict[str, str] = {}
 
-    @classmethod
-    def load(cls, path: Union[str, Path]) -> 'AuthorizedKeys':
+    def get_fingerprint_from_public_key(self, pubkey: str) -> str:
+        """Generate the fingerprint of a public key.
+
+        Args:
+            pubkey (str): the value of the public key
+
+        Returns:
+            str: fingerprint
+        """
+        try:
+            # Use ssh-keygen -l -f /dev/stdin to avoid creating temporary files
+            process = self._execute(
+                ["ssh-keygen", "-l", "-f", "/dev/stdin"],
+                input_data=pubkey
+            )
+            output = process.stdout.strip()
+            # Output format: "2048 SHA256:abc... user@host (RSA)"
+            parts = output.split(' ')
+            if len(parts) >= 2:
+                return parts[1]
+            return output
+        except Exception as e:
+            logger.error(f"Failed to get fingerprint for public key: {e}")
+            return ""
+
+    def load(self, path: Union[str, Path]):
         """Load the keys from a path.
 
         Args:
             path: the filename (path) in which we find the keys
-
-        Returns:
-            AuthorizedKeys: An instance containing the loaded keys.
         """
-        auth = cls()
-        path = Path(path)
+        path = self.resolve_path(str(path))
         if not path.exists():
             logger.warning(f"Authorized keys file not found: {path}")
-            return auth
+            return
 
         try:
             with path.open('r') as fd:
@@ -73,11 +66,9 @@ class AuthorizedKeys:
                     # skip empty lines and comments
                     if not pubkey or pubkey.startswith('#'):
                         continue
-                    auth.add(pubkey)
+                    self.add(pubkey)
         except Exception as e:
             logger.error(f"Error loading authorized keys from {path}: {e}")
-            
-        return auth
 
     def add(self, pubkey: str):
         """Add a public key.
@@ -85,7 +76,7 @@ class AuthorizedKeys:
         Args:
             pubkey: the public key string.
         """
-        fingerprint = get_fingerprint_from_public_key(pubkey)
+        fingerprint = self.get_fingerprint_from_public_key(pubkey)
         if not fingerprint:
             logger.warning("Could not generate fingerprint for public key; skipping.")
             return
@@ -131,5 +122,6 @@ if __name__ == '__main__':
         sys.exit(1)
 
     path = sys.argv[1]
-    auth = AuthorizedKeys.load(path)
+    auth = AuthorizedKeys()
+    auth.load(path)
     print(auth)

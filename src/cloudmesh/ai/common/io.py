@@ -1,7 +1,10 @@
-"""
-I/O utility functions and the unified Console for cloudmesh-ai.
-Provides helpers for path expansion, YAML handling, and styled output.
-"""
+# Copyright 2026 Gregor von Laszewski
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
 
 import csv
 import json
@@ -11,16 +14,93 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Union, List
 
 import yaml
+import pyfiglet
 from rich.console import Console as RichConsole
 from rich.panel import Panel
-from rich.box import ROUNDED
+from rich import box
 from rich.align import Align
 from rich.padding import Padding
 from rich.table import Table
 from rich.status import Status
 from rich.markdown import Markdown
 
-class Console(RichConsole):
+from cloudmesh.ai.common.logging_utils import get_contextual_logger
+from cloudmesh.ai.common.exceptions import IOReadError, IOWriteError
+
+logger = get_contextual_logger("common.io")
+
+class BaseIO:
+    """Base class for I/O operations providing path expansion and file utilities."""
+
+    def expand_path(self, text: str, slashreplace: bool = True) -> str:
+        """Expands a path string by resolving '~', environment variables, and relative links."""
+        if not text:
+            return ""
+        expanded = os.path.expandvars(os.path.expanduser(text))
+        path_obj = Path(expanded).resolve()
+        if slashreplace and os.name == 'nt':
+            return str(path_obj)
+        return path_obj.as_posix()
+
+    def readfile(self, path: str) -> str:
+        """Reads the content of a file."""
+        try:
+            location = self.expand_path(path)
+            with open(location, 'r', encoding='utf-8') as f:
+                return f.read()
+        except Exception as e:
+            logger.error(f"Failed to read file {path}: {e}")
+            raise IOReadError(f"Could not read file {path}: {e}")
+
+    def writefile(self, path: str, content: str) -> None:
+        """Writes content to a file."""
+        try:
+            location = self.expand_path(path)
+            path_obj = Path(location)
+            path_obj.parent.mkdir(parents=True, exist_ok=True)
+            path_obj.write_text(content, encoding='utf-8')
+        except Exception as e:
+            logger.error(f"Failed to write file {path}: {e}")
+            raise IOWriteError(f"Could not write file {path}: {e}")
+
+    def appendfile(self, path: str, content: str) -> None:
+        """Appends content to a file."""
+        try:
+            location = self.expand_path(path)
+            path_obj = Path(location)
+            path_obj.parent.mkdir(parents=True, exist_ok=True)
+            with open(path_obj, "a", encoding="utf-8") as outfile:
+                outfile.write(content)
+        except Exception as e:
+            logger.error(f"Failed to append to file {path}: {e}")
+            raise IOWriteError(f"Could not append to file {path}: {e}")
+
+    def load_yaml(self, path: Union[str, Path]) -> Optional[Dict[str, Any]]:
+        """Safely loads a YAML file from the given path."""
+        try:
+            location = self.expand_path(str(path))
+            path_obj = Path(location)
+            if not path_obj.exists():
+                return None
+            with open(path_obj, 'r', encoding='utf-8') as f:
+                return yaml.safe_load(f)
+        except (yaml.YAMLError, OSError) as e:
+            logger.error(f"YAML load error for {path}: {e}")
+            return None
+
+    def dump_yaml(self, path: Union[str, Path], data: Dict[str, Any]) -> None:
+        """Safely writes a dictionary to a YAML file."""
+        try:
+            location = self.expand_path(str(path))
+            path_obj = Path(location)
+            path_obj.parent.mkdir(parents=True, exist_ok=True)
+            with open(path_obj, 'w', encoding='utf-8') as f:
+                yaml.dump(data, f, default_flow_style=False)
+        except Exception as e:
+            logger.error(f"YAML dump error for {path}: {e}")
+            raise IOWriteError(f"Could not dump YAML to {path}: {e}")
+
+class Console(BaseIO, RichConsole):
     """Unified Console for cloudmesh-ai providing styled output, I/O, and table printing."""
 
     def error(self, message: str):
@@ -63,15 +143,50 @@ class Console(RichConsole):
         return Panel(
             panel_content,
             title=styled_title,
-            box=ROUNDED,
+            box=box.ROUNDED,
             expand=True,
             border_style="bold blue"
         )
 
-    def banner(self, title: str, content: Optional[str] = None, padding: tuple = (0, 0, 0, 2)):
-        """Creates a banner with a title and optional content and prints it."""
-        panel = self.create_banner(title, content)
-        self.print(Padding(panel, padding))
+    def banner(
+        self,
+        txt: Optional[str] = None,
+        c: str = "-",
+        prefix: str = "#",
+        debug: bool = True,
+        label: Optional[str] = None,
+        color: str = "blue",
+        padding: bool = False,
+        figlet: bool = False,
+        font: str = "big",
+    ) -> None:
+        """Prints a banner of the form with a frame of # around the txt"""
+        if not debug:
+            return
+
+        output = "\n"
+        output += f"{prefix} {70 * c}\n"
+        if padding:
+            output += f"{prefix}\n"
+        if label is not None:
+            output += f"{prefix} {label}\n"
+            output += f"{prefix} {70 * c}\n"
+
+        if txt is not None:
+            if figlet:
+                txt = pyfiglet.figlet_format(txt, font=font)
+
+            for line in txt.splitlines():
+                output += f"{prefix} {line}\n"
+            if padding:
+                output += f"{prefix}\n"
+            output += f"{prefix} {70 * c}\n"
+
+        self.cprint(output, color, "")
+
+    def cprint(self, text: str, color: str, style: str = ""):
+        """Helper to print with color."""
+        self.print(f"[{color}]{text}[/{color}]", style=style)
 
     def ynchoice(self, message: str, default: bool = True) -> bool:
         """Asks a yes/no question and returns a boolean."""
@@ -89,16 +204,7 @@ class Console(RichConsole):
     def print_attributes(self, d: Dict[str, Any], header: Optional[List[str]] = None, 
                          order: Optional[List[str]] = None, sort_keys: bool = True, 
                          humanize: bool = False, output: str = "table"):
-        """Prints a dictionary of attributes in various formats.
-        
-        Args:
-            d: The dictionary to print.
-            header: Custom headers for the table.
-            order: Specific order of keys.
-            sort_keys: Whether to sort keys alphabetically.
-            humanize: Whether to humanize values.
-            output: Output format ("table", "json", "yaml", "csv").
-        """
+        """Prints a dictionary of attributes in various formats."""
         if not d:
             self.print("No attributes to display.")
             return
@@ -117,7 +223,7 @@ class Console(RichConsole):
         if header is None:
             header = ["Attribute", "Value"]
 
-        table = Table(title="Attributes", box=ROUNDED, expand=True)
+        table = Table(title="Attributes", box=box.ROUNDED, expand=True)
         table.add_column(header[0])
         table.add_column(header[1])
 
@@ -146,12 +252,14 @@ class Console(RichConsole):
 
     def print_table(self, headers: list, data: list, title: Optional[str] = None):
         """Prints a formatted table."""
-        table = Table(title=title, box=ROUNDED, expand=True)
+        table = Table(title=title, box=box.ROUNDED, expand=True)
         for header in headers:
             table.add_column(header)
         for row in data:
             table.add_row(*[str(item) for item in row])
         self.print(table)
+
+    table = print_table
 
     def print_json(self, data: Any):
         """Prints data as formatted JSON."""
@@ -197,11 +305,144 @@ class Console(RichConsole):
         sys.stdout.write("\r")
         sys.stdout.flush()
 
+    def ai_response(self, text: str, title: str = "AI Response", style: str = "cyan"):
+        """Displays a standardized AI response box."""
+        panel = Panel(
+            text,
+            title=title,
+            title_style=style,
+            border_style=style,
+            expand=False,
+            box=box.ROUNDED
+        )
+        self.print(panel)
+
+    def telemetry_table(self, records: List[Dict[str, Any]], title: str = "Telemetry Records"):
+        """Displays a standardized telemetry records table."""
+        if not records:
+            self.print("[yellow]No records to display.[/yellow]")
+            return
+
+        table = Table(
+            title=title,
+            box=box.ROUNDED,
+            header_style="bold magenta"
+        )
+        
+        headers = records[0].keys()
+        for header in headers:
+            table.add_column(header.capitalize(), style="cyan")
+
+        for r in records:
+            row = [str(r.get(h, "N/A")) for h in headers]
+            table.add_row(*row)
+
+        self.print(table)
+
+    def print_status(self, message: str, style: str = "yellow"):
+        """Prints a simple status message."""
+        self.print(f"[{style}] {message}[/{style}]")
+
+    def print_error(self, message: str):
+        """Prints a standardized error message."""
+        self.print(f"[bold red]Error:[/bold red] {message}")
+
+    def print_success(self, message: str):
+        """Prints a standardized success message."""
+        self.print(f"[bold green]Success:[/bold green] {message}")
+
+class Editor(BaseIO):
+    """Utility to open files in the default system editor."""
+    def edit(self, path: str):
+        expanded_path = self.expand_path(path)
+        editor = os.environ.get("EDITOR")
+        if os.name == 'posix':
+            import subprocess
+            try:
+                if sys.platform == 'darwin':
+                    cmd = ['open', '-a', editor, expanded_path] if editor and '/' not in editor else \
+                           [editor, expanded_path] if editor else ['open', expanded_path]
+                    subprocess.run(cmd, check=True)
+                else:
+                    cmd = [editor, expanded_path] if editor else ['xdg-open', expanded_path]
+                    subprocess.run(cmd, check=True)
+            except Exception as e:
+                logger.error(f"Failed to open editor: {e}")
+        elif os.name == 'nt':
+            try:
+                if editor:
+                    import subprocess
+                    subprocess.run([editor, expanded_path], check=True)
+                else:
+                    os.startfile(expanded_path)
+            except Exception as e:
+                logger.error(f"Failed to open editor: {e}")
+
+# Singleton instance for backward compatibility
 console = Console()
 
-def banner(title: str, content: Optional[str] = None):
+def banner(
+    txt: Optional[str] = None,
+    c: str = "-",
+    prefix: str = "#",
+    debug: bool = True,
+    label: Optional[str] = None,
+    color: str = "blue",
+    padding: bool = False,
+    figlet: bool = False,
+    font: str = "big",
+):
     """Standalone wrapper for console.banner."""
-    console.banner(title, content)
+    console.banner(
+        txt=txt,
+        c=c,
+        prefix=prefix,
+        debug=debug,
+        label=label,
+        color=color,
+        padding=padding,
+        figlet=figlet,
+        font=font,
+    )
+
+def readfile(path: str) -> str:
+    """Standalone wrapper for console.readfile."""
+    return console.readfile(path)
+
+def writefile(path: str, content: str) -> None:
+    """Standalone wrapper for console.writefile."""
+    console.writefile(path, content)
+
+def appendfile(path: str, content: str) -> None:
+    """Standalone wrapper for console.appendfile."""
+    console.appendfile(path, content)
+
+def path_expand(text: str, slashreplace: bool = True) -> str:
+    """Standalone wrapper for console.expand_path."""
+    return console.expand_path(text, slashreplace)
+
+def load_yaml(path: Union[str, Path]) -> Optional[Dict[str, Any]]:
+    """Standalone wrapper for console.load_yaml."""
+    return console.load_yaml(path)
+
+def dump_yaml(path: Union[str, Path], data: Dict[str, Any]) -> None:
+    """Standalone wrapper for console.dump_yaml."""
+    console.dump_yaml(path, data)
+
+def create_benchmark_yaml(path: str, n: int) -> None:
+    """Creates a Cloudmesh service YAML test file."""
+    cm = {"cloudmesh": {}}
+    for i in range(0, n):
+        cm["cloudmesh"][f"service{i}"] = {"attribute": f"service{i}"}
+    console.dump_yaml(path, cm)
+
+def create_benchmark_file(path: str, n: int) -> int:
+    """Creates a file of a given size in binary megabytes."""
+    location = console.expand_path(path)
+    size = 1048576 * n
+    with open(location, "wb") as f:
+        f.write(os.urandom(size))
+    return int(os.path.getsize(location) / 1048576.0)
 
 async def async_readfile(path: str) -> str:
     """Asynchronously reads the content of a file."""
@@ -212,92 +453,8 @@ async def async_readfile(path: str) -> str:
 async def async_writefile(path: str, content: str) -> None:
     """Asynchronously writes content to a file."""
     import aiofiles
-    from cloudmesh.ai.common.util import path_expand
-    path_obj = Path(path_expand(path))
+    location = console.expand_path(path)
+    path_obj = Path(location)
     path_obj.parent.mkdir(parents=True, exist_ok=True)
     async with aiofiles.open(path_obj, mode='w', encoding='utf-8') as f:
         await f.write(content)
-
-def readfile(path: str) -> str:
-    """Reads the content of a file."""
-    with open(path, 'r', encoding='utf-8') as f:
-        return f.read()
-
-def writefile(path: str, content: str) -> None:
-    """Writes content to a file."""
-    from cloudmesh.ai.common.util import path_expand
-    path_obj = Path(path_expand(path))
-    path_obj.parent.mkdir(parents=True, exist_ok=True)
-    path_obj.write_text(content, encoding='utf-8')
-
-def path_expand(text: str, slashreplace: bool = True) -> str:
-    """Expands a path string by resolving '~', environment variables, and relative links."""
-    if not text:
-        return ""
-    expanded = os.path.expandvars(os.path.expanduser(text))
-    path_obj = Path(expanded).resolve()
-    if slashreplace and os.name == 'nt':
-        return str(path_obj)
-    return path_obj.as_posix()
-
-def load_yaml(path: Union[str, Path]) -> Optional[Dict[str, Any]]:
-    """Safely loads a YAML file from the given path."""
-    path_obj = Path(path)
-    try:
-        if not path_obj.exists():
-            return None
-        with open(path_obj, 'r', encoding='utf-8') as f:
-            return yaml.safe_load(f)
-    except (yaml.YAMLError, OSError):
-        return None
-
-def dump_yaml(path: Union[str, Path], data: Dict[str, Any]) -> None:
-    """Safely writes a dictionary to a YAML file."""
-    path_obj = Path(path)
-    path_obj.parent.mkdir(parents=True, exist_ok=True)
-    with open(path_obj, 'w', encoding='utf-8') as f:
-        yaml.dump(data, f, default_flow_style=False)
-
-def create_benchmark_yaml(path: str, n: int) -> None:
-    """Creates a Cloudmesh service YAML test file."""
-    cm = {"cloudmesh": {}}
-    for i in range(0, n):
-        cm["cloudmesh"][f"service{i}"] = {"attribute": f"service{i}"}
-    location = path_expand(path)
-    with open(location, "w", encoding='utf-8') as yaml_file:
-        yaml.dump(cm, yaml_file)
-
-def create_benchmark_file(path: str, n: int) -> int:
-    """Creates a file of a given size in binary megabytes."""
-    location = path_expand(path)
-    size = 1048576 * n
-    with open(location, "wb") as f:
-        f.write(os.urandom(size))
-    return int(os.path.getsize(location) / 1048576.0)
-
-class Editor:
-    """Utility to open files in the default system editor."""
-    def edit(self, path: str):
-        expanded_path = path_expand(path)
-        editor = os.environ.get("EDITOR")
-        if os.name == 'posix':
-            import subprocess
-            try:
-                if sys.platform == 'darwin':
-                    cmd = ['open', '-a', editor, expanded_path] if editor and '/' not in editor else \
-                          [editor, expanded_path] if editor else ['open', expanded_path]
-                    subprocess.run(cmd, check=True)
-                else:
-                    cmd = [editor, expanded_path] if editor else ['xdg-open', expanded_path]
-                    subprocess.run(cmd, check=True)
-            except Exception as e:
-                console.error(f"Failed to open editor: {e}")
-        elif os.name == 'nt':
-            try:
-                if editor:
-                    import subprocess
-                    subprocess.run([editor, expanded_path], check=True)
-                else:
-                    os.startfile(expanded_path)
-            except Exception as e:
-                console.error(f"Failed to open editor: {e}")

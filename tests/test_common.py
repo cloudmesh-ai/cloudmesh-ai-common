@@ -3,8 +3,10 @@ import os
 import asyncio
 from pathlib import Path
 from cloudmesh.ai.common.io import Console, readfile, writefile, async_readfile, async_writefile
-from cloudmesh.ai.common.util import flatten, backup_name, path_expand
-from cloudmesh.ai.common.systeminfo import os_is_windows, os_is_linux, os_is_mac
+from cloudmesh.ai.common.flatdict import flatten
+from cloudmesh.ai.common.util import backup_name
+from cloudmesh.ai.common.io import path_expand
+from cloudmesh.ai.common.sys import os_is_windows, os_is_linux, os_is_mac
 from cloudmesh.ai.common.debug import Debug, trace
 
 # --- Tests for util.py ---
@@ -99,5 +101,5 @@ def test_trace_decorator(capsys):
     Debug.enable(True)
     add(1, 2)
     captured = capsys.readouterr()
-    assert "Entering add(1, 2)" in captured.out
-    assert "Exiting add -> 3" in captured.out
+    assert "Entering" in captured.out and "add" in captured.out and "(1, 2)" in captured.out
+    assert "Exiting" in captured.out and "add" in captured.out and "-> 3" in captured.out

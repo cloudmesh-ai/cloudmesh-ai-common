@@ -3,6 +3,7 @@ import humanize as HUMANIZE
 from dateutil import parser
 from zoneinfo import ZoneInfo
 import tzlocal
+import locale
 
 
 class DateTime(object):
@@ -125,6 +126,23 @@ class DateTime(object):
     @staticmethod
     def add(one, two):
         return DateTime.datetime(DateTime.datetime(one)) + DateTime.datetime(two)
+
+    @staticmethod
+    def timezone(default: str = "America/New_York") -> str:
+        """Returns the local timezone name."""
+        try:
+            return tzlocal.get_localzone_name()
+        except Exception:
+            return default
+
+    @staticmethod
+    def locale_name() -> str:
+        """Detects system locale (e.g., 'en_us')."""
+        try:
+            lang_code, _ = locale.getlocale()
+            return lang_code.split('_')[0].lower() if lang_code else "us"
+        except Exception:
+            return "us"
 
 
 if __name__ == "__main__":
