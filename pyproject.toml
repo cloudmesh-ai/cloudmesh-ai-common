@@ -21,6 +21,7 @@ dependencies = [
     "pyfiglet",
     "sshconf",
     "fabric",
+    "python-dateutil",
 ]
 
 [project.optional-dependencies]
