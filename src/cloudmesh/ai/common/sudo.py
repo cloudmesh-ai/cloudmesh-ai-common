@@ -50,7 +50,16 @@ class Sudo:
         Args:
             msg (str, optional): The message to display when prompting for the password.
         """
-        os.system(f'sudo -p "{msg}"  echo "" > /dev/null')
+        try:
+            # Use subprocess.run without capturing output to allow sudo to prompt the user via TTY
+            result = subprocess.run(
+                ["sudo", "-p", msg, "echo", ""],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            return result.returncode
+        except Exception:
+            return 1
 
     @staticmethod
     def expire():

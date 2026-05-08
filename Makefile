@@ -14,7 +14,7 @@ PYENVVERSION := $(shell pyenv version-name)
 
 .PHONY: help install clean build test reinstall \
         check tag release test test-cov setup-test uninstall-all \
-        lint typecheck
+        lint typecheck sync
 
 help:
 	@echo
@@ -32,6 +32,7 @@ help:
 	@echo "  typecheck     - Run Mypy type checker"
 	@echo "  tag           - Create a git tag based on current version and push"
 	@echo "  release       - Full Production Cycle: upload + tag"
+	@echo "  sync          - Sync changed .py files to remote server"
 	@echo
 
 # --- DEVELOPMENT & TESTING ---
@@ -81,6 +82,12 @@ tag:
 
 release: upload tag
 	@echo "Production release and tagging complete."
+
+# --- REMOTE SYNC ---
+
+sync:
+	@echo "Syncing changed .py files to white:work/cloudmesh-ai-common..."
+	rsync -avzi --exclude="__pycache__/" --exclude="*.egg-info/" --include="*.py" --include="*/" --exclude="*" . white:work/cloudmesh-ai-common
 
 # --- CLEANUP & REINSTALL ---
 
