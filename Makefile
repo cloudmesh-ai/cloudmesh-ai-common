@@ -13,7 +13,7 @@ GIT          := git
 PYENVVERSION := $(shell pyenv version-name)
 
 .PHONY: help install clean build test reinstall \
-        check tag release test test-cov setup-test uninstall-all \
+        check tag release test-html test-cov setup-test uninstall-all \
         lint typecheck sync
 
 help:
@@ -44,11 +44,14 @@ requirements:
 	pip-compile --output-file=requirements.txt pyproject.toml
 
 test:
-	pytest -v --html=.report.html tests/
+	$(PYTHON) -m pytest -v tests/
+
+test-html:
+	$(PYTHON) -m pytest -v --html=.report.html tests/
 	open .report.html
 
 test-cov:
-	pytest --cov=cloudmesh.ai.cmc --cov-report=term-missing tests/
+	$(PYTHON) -m pytest --cov=cloudmesh.ai.cmc --cov-report=term-missing tests/
 
 lint:
 	ruff check src tests

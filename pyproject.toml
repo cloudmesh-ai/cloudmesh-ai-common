@@ -37,6 +37,9 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest",
+    "pytest-html",
+    "pytest-mock",
+    "pytest-cov",
     "pip-tools",
     "twine",
     "ruff",
