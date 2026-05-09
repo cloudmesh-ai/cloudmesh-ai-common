@@ -150,11 +150,11 @@ class Console(BaseIO, RichConsole):
 
     def banner(
         self,
+        label: Optional[str] = None,
         txt: Optional[str] = None,
         c: str = "-",
         prefix: str = "#",
         debug: bool = True,
-        label: Optional[str] = None,
         color: str = "blue",
         padding: bool = False,
         figlet: bool = False,
@@ -250,14 +250,15 @@ class Console(BaseIO, RichConsole):
 
         self.print(table)
 
-    def print_table(self, headers: list, data: list, title: Optional[str] = None):
-        """Prints a formatted table."""
-        table = Table(title=title, box=box.ROUNDED, expand=True)
+    def print_table(self, headers: list, data: list, title: Optional[str] = None, expand: bool = False):
+        """Prints a formatted table. By default, it is compact (expand=False)."""
+        styled_title = f"[bold]{title}[/bold]" if title else None
+        table = Table(title=styled_title, box=box.ROUNDED, expand=expand, header_style="bold")
         for header in headers:
             table.add_column(header)
         for row in data:
             table.add_row(*[str(item) for item in row])
-        self.print(table)
+        self.print(Align.center(table) if expand else Align.left(table))
 
     table = print_table
 
@@ -382,11 +383,11 @@ class Editor(BaseIO):
 console = Console()
 
 def banner(
+    label: Optional[str] = None,
     txt: Optional[str] = None,
     c: str = "-",
     prefix: str = "#",
     debug: bool = True,
-    label: Optional[str] = None,
     color: str = "blue",
     padding: bool = False,
     figlet: bool = False,
@@ -394,11 +395,11 @@ def banner(
 ):
     """Standalone wrapper for console.banner."""
     console.banner(
+        label=label,
         txt=txt,
         c=c,
         prefix=prefix,
         debug=debug,
-        label=label,
         color=color,
         padding=padding,
         figlet=figlet,

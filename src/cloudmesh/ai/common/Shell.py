@@ -19,6 +19,7 @@ from cloudmesh.ai.common.io import path_expand
 from cloudmesh.ai.common.io import readfile, writefile
 
 import shlex
+import re
 from shlex import quote
 
 
@@ -66,6 +67,28 @@ class Shell(object):
     """The shell class allowing us to conveniently access many operating system commands."""
 
     @staticmethod
+    def _filter_noise(text: str) -> str:
+        """Filters out common SSH noise and warnings from the output."""
+        if not text:
+            return ""
+        
+        noise_patterns = {
+            "** WARNING: connection is not using a post-quantum key exchange algorithm.",
+            "** This session may be vulnerable to \"store now, decrypt later\" attacks.",
+            "** The server may need to be upgraded. See https://openssh.com/pq.html"
+        }
+        
+        lines = text.splitlines()
+        filtered_lines = []
+        
+        for line in lines:
+            if line.strip() in noise_patterns:
+                continue
+            filtered_lines.append(line)
+        
+        return "\n".join(filtered_lines).strip()
+
+    @staticmethod
     def run(command, exitcode="", encoding="utf-8", replace=True, timeout=None):
         """executes the command and returns the output as string"""
         if sys.platform == "win32":
@@ -90,7 +113,8 @@ class Shell(object):
             raise RuntimeError(f"{e.returncode} {e.output.decode()}")
         
         if encoding is None or encoding == "utf-8":
-            return str(r, "utf-8")
+            result = str(r, "utf-8")
+            return Shell._filter_noise(result)
         else:
             return r
 
