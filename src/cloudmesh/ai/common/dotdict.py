@@ -123,7 +123,7 @@ class DotDict(OrderedDict):
         # Use a local dumper to avoid polluting global yaml state if possible,
         # but for simplicity we use the global representer.
         yaml.add_representer(str, str_presenter)
-        return yaml.dump(self, default_flow_style=False)
+        return yaml.dump(self.to_dict(), default_flow_style=False)
 
     def expand(self, d=None):
         """Expands placeholders in a dictionary using this DotDict's values.
