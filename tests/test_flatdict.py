@@ -1,7 +1,7 @@
 import os
 import pytest
 import yaml
-from cloudmesh.ai.common.flatdict import flatten, FlatDict, FlatDict2, expand_config_parameters
+from cloudmesh.ai.common.flatdict import flatten, FlatDict, expand_config_parameters
 
 def test_flatten():
     d = {
@@ -108,20 +108,20 @@ def test_expand_config_security():
     # it should remain as the original string or be handled by the try-except.
     assert expanded["danger"] == "eval(__import__('os').system('ls'))"
 
-def test_flatdict2_convert():
+def test_flatdict_convert():
     class User:
         def __init__(self, name, age):
             self.name = name
             self.age = age
 
     user = User("Gregor", 40)
-    converted = FlatDict2.convert(user, flatten=True)
+    converted = FlatDict.from_object(user)
     
     assert isinstance(converted, FlatDict)
     assert converted["name"] == "Gregor"
     assert converted["age"] == 40
 
-def test_flatdict2_complex_object():
+def test_flatdict_complex_object():
     class Company:
         def __init__(self, name, employees):
             self.name = name
@@ -135,7 +135,7 @@ def test_flatdict2_complex_object():
     emp2 = Employee("Bob")
     comp = Company("Cloudmesh", [emp1, emp2])
     
-    converted = FlatDict2.object_to_dict(comp)
+    converted = FlatDict._object_to_dict(comp)
     assert converted["name"] == "Cloudmesh"
     assert len(converted["employees"]) == 2
     assert converted["employees"][0]["name"] == "Alice"

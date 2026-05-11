@@ -2,6 +2,16 @@
 
 All notable changes to `cloudmesh-ai-common` will be documented in this file.
 
+## [7.0.6.dev1] - 2026-05-11
+
+### Added
+- **Enhanced DotDict**: Significantly expanded `DotDict` capabilities:
+    - `merge()`: Support for deep merging of nested dictionaries.
+    - `smart_get()`: Flexible lookup supporting both direct dot-paths and recursive search.
+    - `to_dict()` and `.dict` property: Recursive conversion to standard Python dictionaries.
+    - `to_json()`: Direct serialization to JSON strings.
+    - Dot-notation `get()`: Overrode standard `get()` to support nested path lookups.
+
 ## [7.0.5.dev1] - 2026-04-26
 
 ### Added
