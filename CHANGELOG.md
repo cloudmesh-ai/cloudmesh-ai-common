@@ -12,6 +12,10 @@ All notable changes to `cloudmesh-ai-common` will be documented in this file.
     - `to_json()`: Direct serialization to JSON strings.
     - Dot-notation `get()`: Overrode standard `get()` to support nested path lookups.
 
+### Fixed
+- **DotDict**: Fixed YAML representation to avoid `!!python/object/apply` tags.
+- **Shell**: Improved SSH noise filtering in `Shell.run`.
+
 ## [7.0.5.dev1] - 2026-04-26
 
 ### Added
