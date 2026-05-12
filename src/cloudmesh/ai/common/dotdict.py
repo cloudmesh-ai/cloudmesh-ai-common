@@ -87,6 +87,10 @@ class DotDict(OrderedDict):
                 return default
         return super().get(key, default)
 
+    def __repr__(self):
+        """Returns a string representation of the DotDict as YAML."""
+        return self.yaml
+
     def __init__(self, data=None, **kwargs):
         """Initializes the DotDict with optional data and keyword arguments.
 
@@ -146,25 +150,39 @@ class DotDict(OrderedDict):
  
         result = OrderedDict()
         
-        def resolve_value(val):
-            if not isinstance(val, str):
-                return val
+        # Simple expansion: iterate over keys and replace {key} placeholders.
+        # This avoids regex issues with shell variables like ${VAR}.
+        
+        # Start with a copy of the target
+        result = OrderedDict(target) if isinstance(target, dict) else OrderedDict()
+        
+        # Iterate over all keys in this DotDict to use as replacement values
+        for key in self.keys():
+            val = self[key]
+            if val is None:
+                continue
             
-            # Find all {key} patterns
-            pattern = r"\{([^}]+)\}"
+            placeholder = f"{{{key}}}"
+            replacement = str(val)
             
-            def replace_match(match):
-                key = match.group(1)
-                # Use this DotDict (self) as the source of truth for replacements
-                try:
-                    return str(self[key])
-                except KeyError:
-                    return f"{{{key}}}"
-            
-            return re.sub(pattern, replace_match, val)
- 
-        for k, v in target.items():
-            result[k] = resolve_value(v)
+            for k, v in result.items():
+                if isinstance(v, str) and placeholder in v:
+                    result[k] = v.replace(placeholder, replacement)
+                    
+        # Also handle cases where the target has keys that should be expanded 
+        # but aren't in 'self' (local scope expansion)
+        if isinstance(target, dict):
+            for key in target.keys():
+                val = target[key]
+                if val is None:
+                    continue
+                
+                placeholder = f"{{{key}}}"
+                replacement = str(val)
+                
+                for k, v in result.items():
+                    if isinstance(v, str) and placeholder in v:
+                        result[k] = v.replace(placeholder, replacement)
             
         return DotDict(result)
 
