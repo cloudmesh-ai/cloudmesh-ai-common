@@ -122,4 +122,4 @@ reinstall: uninstall-all clean
 
 publish:
 	@echo "Deploying MkDocs site to GitHub Pages..."
-	mkdocs gh-deploy --clean
+	./publish.sh
