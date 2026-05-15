@@ -124,3 +124,25 @@ class SSHBase:
         except Exception as e:
             logger.error(f"Fabric execution failed on {host}: {e}")
             raise e
+
+    def put(self, local_path: str, remote_path: str, host: str, user: Optional[str] = None) -> None:
+        """Upload a local file to a remote host."""
+        if self.debug:
+            logger.debug(f"Uploading {local_path} to {host}:{remote_path}")
+        try:
+            conn = self._get_connection(host, user)
+            conn.put(local_path, remote_path)
+        except Exception as e:
+            logger.error(f"Fabric put failed on {host}: {e}")
+            raise e
+
+    def get(self, remote_path: str, local_path: str, host: str, user: Optional[str] = None) -> None:
+        """Download a remote file to a local path."""
+        if self.debug:
+            logger.debug(f"Downloading {remote_path} from {host} to {local_path}")
+        try:
+            conn = self._get_connection(host, user)
+            conn.get(remote_path, local_path)
+        except Exception as e:
+            logger.error(f"Fabric get failed on {host}: {e}")
+            raise e

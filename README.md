@@ -2,6 +2,9 @@
 
 `cloudmesh-ai-common` provides a set of shared utilities for the Cloudmesh AI ecosystem, focusing on system introspection, structured telemetry, standardized logging, and unified remote execution.
 
+**Quick Links:**
+- [API Reference](API.md) - Full technical documentation of all modules.
+
 ## Installation
 
 ### Using pip

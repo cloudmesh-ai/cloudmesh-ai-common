@@ -14,7 +14,7 @@ PYENVVERSION := $(shell pyenv version-name)
 
 .PHONY: help install clean build test reinstall \
         check tag release test-html test-cov setup-test uninstall-all \
-        lint typecheck sync
+        lint typecheck sync doc view
 
 help:
 	@echo
@@ -33,6 +33,8 @@ help:
 	@echo "  tag           - Create a git tag based on current version and push"
 	@echo "  release       - Full Production Cycle: upload + tag"
 	@echo "  sync          - Sync changed .py files to remote server"
+	@echo "  doc           - Build documentation using mkdocs"
+	@echo "  view          - Start documentation server"
 	@echo
 
 # --- DEVELOPMENT & TESTING ---
@@ -86,6 +88,14 @@ tag:
 
 release: upload tag
 	@echo "Production release and tagging complete."
+
+# --- DOCUMENTATION ---
+
+doc:
+	mkdocs build
+
+view:
+	mkdocs serve
 
 # --- REMOTE SYNC ---
 
