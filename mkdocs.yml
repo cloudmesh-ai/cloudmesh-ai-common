@@ -11,6 +11,8 @@ nav:
 - Home: index.md
 - Project:
   - Changelog: CHANGELOG.md
+  - GitHub: https://github.com/cloudmesh-ai/cloudmesh-ai-common
+  - Issues: https://github.com/cloudmesh-ai/cloudmesh-ai-common/issues
   - Update: update.md
 - Documentation:
   - User Guide: user.md
