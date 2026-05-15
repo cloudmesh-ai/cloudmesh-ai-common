@@ -299,6 +299,62 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/cloudmesh-ai/cloudmesh-ai-common" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GitHub
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/cloudmesh-ai/cloudmesh-ai-common/issues" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Issues
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -880,44 +936,65 @@
 
 
 <h1 id="migration-guide-for-redundancy-reduction">Migration Guide for Redundancy Reduction</h1>
-<p>This document tracks the changes made to reduce redundancies in <code>cloudmesh-ai-common</code>. For every improvement, the "Old Way" and "New Way" are documented here to guide programs that need to be updated.</p>
+<p>This document tracks the changes made to transition smoothly from <code>cloudmesh-common</code> to <code>cloudmesh-ai-common</code>. We have significantly improved the import paths for several packages. Common transitions are documented here using the labels "Old: common:" and "New: common-ai:" to guide updates for existing programs.</p>
+<p>Please not if needed you can still use <code>cloudmesh.common</code>, but you shoudl upgrade to <code>cloudmesh-ai-common</code>.</p>
 <h2 id="system-information">System Information</h2>
-<p><strong>Change</strong>: Merge <code>systeminfo.py</code> into <code>sys.py</code>.
-- <strong>Old Way</strong>: <code>from cloudmesh.ai.common import systeminfo</code>
-- <strong>New Way</strong>: <code>from cloudmesh.ai.common import sys</code></p>
+<p><strong>Change</strong>: Merge <code>systeminfo.py</code> into <code>sys.py</code>.</p>
+<ul>
+<li><strong>Old: common</strong>: <code>from cloudmesh.ai.common import systeminfo</code></li>
+<li><strong>New: common-ai:</strong>: <code>from cloudmesh.ai.common import sys</code></li>
+</ul>
 <h2 id="sudo-utilities">Sudo Utilities</h2>
-<p><strong>Change</strong>: Merge <code>sudo.py</code> into <code>security.py</code>.
-- <strong>Old Way</strong>: <code>from cloudmesh.ai.common import sudo</code>
-- <strong>New Way</strong>: <code>from cloudmesh.ai.common.security import Sudo</code></p>
+<p><strong>Change</strong>: Merge <code>sudo.py</code> into <code>security.py</code>.</p>
+<ul>
+<li><strong>Old: common</strong>: <code>from cloudmesh.ai.common import sudo</code></li>
+<li><strong>New: common-ai:</strong>: <code>from cloudmesh.ai.common.security import Sudo</code></li>
+</ul>
 <h2 id="io-utilities">IO &amp; Utilities</h2>
-<p><strong>Change</strong>: Consolidate <code>path_expand()</code> and <code>banner()</code> into <code>io.py</code>.
-- <strong>Old Way</strong>: <code>from cloudmesh.ai.common import util</code> $\rightarrow$ <code>util.path_expand()</code> / <code>util.banner()</code>
-- <strong>New Way</strong>: <code>from cloudmesh.ai.common import io</code> $\rightarrow$ <code>io.path_expand()</code> / <code>io.console.banner()</code></p>
-<p><strong>Change</strong>: Consolidate <code>appendfile()</code> and <code>writefile()</code> into <code>io.py</code>.
-- <strong>Old Way</strong>: <code>util.appendfile()</code> / <code>util.writefile()</code>
-- <strong>New Way</strong>: <code>from cloudmesh.ai.common import io</code> $\rightarrow$ <code>io.appendfile()</code> / <code>io.writefile()</code></p>
-<p><strong>Change</strong>: Consolidate <code>sudo_readfile()</code> into <code>security.py</code>.
-- <strong>Old Way</strong>: <code>util.sudo_readfile()</code>
-- <strong>New Way</strong>: <code>Sudo().readfile()</code></p>
+<p><strong>Change</strong>: Consolidate <code>path_expand()</code> and <code>banner()</code> into <code>io.py</code>.</p>
+<ul>
+<li><strong>Old: common</strong>: <code>from cloudmesh.ai.common import util</code> $\rightarrow$ <code>util.path_expand()</code> / <code>util.banner()</code></li>
+<li><strong>New: common-ai:</strong>: <code>from cloudmesh.ai.common import io</code> $\rightarrow$ <code>io.path_expand()</code> / <code>io.console.banner()</code></li>
+</ul>
+<p><strong>Change</strong>: Consolidate <code>appendfile()</code> and <code>writefile()</code> into <code>io.py</code>.</p>
+<ul>
+<li><strong>Old: common</strong>: <code>util.appendfile()</code> / <code>util.writefile()</code></li>
+<li><strong>New: common-ai:</strong>: <code>from cloudmesh.ai.common import io</code> $\rightarrow$ <code>io.appendfile()</code> / <code>io.writefile()</code></li>
+</ul>
+<p><strong>Change</strong>: Consolidate <code>sudo_readfile()</code> into <code>security.py</code>.</p>
+<ul>
+<li><strong>Old: common</strong>: <code>util.sudo_readfile()</code></li>
+<li><strong>New: common-ai:</strong>: <code>Sudo().readfile()</code></li>
+</ul>
 <h2 id="dictionary-flattening">Dictionary Flattening</h2>
-<p><strong>Change</strong>: Remove <code>flatten()</code> from <code>util.py</code>.
-- <strong>Old Way</strong>: <code>from cloudmesh.ai.common import util</code> $\rightarrow$ <code>util.flatten()</code>
-- <strong>New Way</strong>: <code>from cloudmesh.ai.common import flatdict</code> $\rightarrow$ <code>flatdict.flatten()</code></p>
+<p><strong>Change</strong>: Remove <code>flatten()</code> from <code>util.py</code>.</p>
+<ul>
+<li><strong>Old: common</strong>: <code>from cloudmesh.ai.common import util</code> $\rightarrow$ <code>util.flatten()</code></li>
+<li><strong>New: common-ai:</strong>: <code>from cloudmesh.ai.common import flatdict</code> $\rightarrow$ <code>flatdict.flatten()</code></li>
+</ul>
 <h2 id="ssh-configuration">SSH Configuration</h2>
-<p><strong>Change</strong>: Consolidate <code>ssh.py</code> into <code>ssh/ssh_config.py</code> and introduce a package facade.
-- <strong>Old Way</strong>: <code>from cloudmesh.ai.common import ssh</code> $\rightarrow$ <code>ssh.SSHConfig()</code>
-- <strong>New Way</strong>: <code>from cloudmesh.ai.common.ssh import SSHConfig</code> $\rightarrow$ <code>SSHConfig()</code></p>
-<p><strong>Change</strong>: Rename <code>ssh/encrypt.py</code> to <code>ssh/encryption.py</code> and <code>EncryptFile</code> to <code>SSHEncryption</code>.
-- <strong>Old Way</strong>: <code>from cloudmesh.ai.common.ssh import encrypt</code> $\rightarrow$ <code>encrypt.EncryptFile()</code>
-- <strong>New Way</strong>: <code>from cloudmesh.ai.common.ssh import SSHEncryption</code> $\rightarrow$ <code>SSHEncryption()</code></p>
+<p><strong>Change</strong>: Consolidate <code>ssh.py</code> into <code>ssh/ssh_config.py</code> and introduce a package facade.</p>
+<ul>
+<li><strong>Old: common</strong>: <code>from cloudmesh.ai.common import ssh</code> $\rightarrow$ <code>ssh.SSHConfig()</code></li>
+<li><strong>New: common-ai:</strong>: <code>from cloudmesh.ai.common.ssh import SSHConfig</code> $\rightarrow$ <code>SSHConfig()</code></li>
+</ul>
+<p><strong>Change</strong>: Rename <code>ssh/encrypt.py</code> to <code>ssh/encryption.py</code> and <code>EncryptFile</code> to <code>SSHEncryption</code>.</p>
+<ul>
+<li><strong>Old: common</strong>: <code>from cloudmesh.ai.common.ssh import encrypt</code> $\rightarrow$ <code>encrypt.EncryptFile()</code></li>
+<li><strong>New: common-ai:</strong>: <code>from cloudmesh.ai.common.ssh import SSHEncryption</code> $\rightarrow$ <code>SSHEncryption()</code></li>
+</ul>
 <h2 id="timedate">Time/Date</h2>
-<p><strong>Change</strong>: Merge <code>time.py</code> into <code>DateTime.py</code>.
-- <strong>Old Way</strong>: <code>from cloudmesh.ai.common import time</code>
-- <strong>New Way</strong>: <code>from cloudmesh.ai.common import DateTime</code></p>
+<p><strong>Change</strong>: Merge <code>time.py</code> into <code>DateTime.py</code>.</p>
+<ul>
+<li><strong>Old: common</strong>: <code>from cloudmesh.ai.common import time</code></li>
+<li><strong>New: common-ai:</strong>: <code>from cloudmesh.ai.common import DateTime</code></li>
+</ul>
 <h2 id="uiconsole">UI/Console</h2>
-<p><strong>Change</strong>: Consolidate <code>ui.py</code> functions into <code>io.py</code>'s <code>Console</code> class.
-- <strong>Old Way</strong>: <code>from cloudmesh.ai.common import ui</code> $\rightarrow$ <code>ui.ai_response()</code> / <code>ui.print_error()</code>
-- <strong>New Way</strong>: <code>from cloudmesh.ai.common.io import console</code> $\rightarrow$ <code>console.ai_response()</code> / <code>console.print_error()</code></p>
+<p><strong>Change</strong>: Consolidate <code>ui.py</code> functions into <code>io.py</code>'s <code>Console</code> class.</p>
+<ul>
+<li><strong>Old: common</strong>: <code>from cloudmesh.ai.common import ui</code> $\rightarrow$ <code>ui.ai_response()</code> / <code>ui.print_error()</code></li>
+<li><strong>New: commons-ai</strong>: <code>from cloudmesh.ai.common.io import console</code> $\rightarrow$ <code>console.ai_response()</code> / <code>console.print_error()</code></li>
+</ul>
 
 
 
