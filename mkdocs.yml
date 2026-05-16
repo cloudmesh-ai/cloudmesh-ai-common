@@ -4,6 +4,8 @@ extra_css:
 nav:
 - Home: index.md
 - Documentation:
+  - Update from cloudmesh: README-update-from-cloudmesh.md
+  - README: readme.md
   - User Guide: user.md
   - IO: io.md
   - Logging: logging.md
@@ -18,8 +20,7 @@ nav:
   - Issues: https://github.com/cloudmesh-ai/cloudmesh-ai-common/issues
   - Update: update.md
 - API Reference: api.md
-- README-update-from-cloudmesh: README-update-from-cloudmesh.md
-- README: README.md
+
 plugins:
 - search
 - mkdocstrings:
