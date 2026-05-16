@@ -32,6 +32,7 @@ dependencies = [
     "sshconf",
     "fabric",
     "python-dateutil",
+    "cloudmesh-ai-theme",
 ]
 
 [project.optional-dependencies]
