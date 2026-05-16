@@ -3,11 +3,6 @@ extra_css:
 - css/custom.css
 nav:
 - Home: index.md
-- Project:
-  - Changelog: CHANGELOG.md
-  - GitHub: https://github.com/cloudmesh-ai/cloudmesh-ai-common
-  - Issues: https://github.com/cloudmesh-ai/cloudmesh-ai-common/issues
-  - Update: update.md
 - Documentation:
   - User Guide: user.md
   - IO: io.md
@@ -17,6 +12,11 @@ nav:
   - Telemetry: telemetry.md
   - Time: time.md
   - Aggregation: aggregation.md
+- Project:
+  - Changelog: CHANGELOG.md
+  - GitHub: https://github.com/cloudmesh-ai/cloudmesh-ai-common
+  - Issues: https://github.com/cloudmesh-ai/cloudmesh-ai-common/issues
+  - Update: update.md
 - API Reference: api.md
 - README-update-from-cloudmesh: README-update-from-cloudmesh.md
 - README: README.md
