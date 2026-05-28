@@ -5,7 +5,7 @@ nav:
 - Home: index.md
 - Documentation:
   - Update from cloudmesh: README-update-from-cloudmesh.md
-  - README: readme.md
+  - Readme: readme.md
   - User Guide: user.md
   - IO: io.md
   - Logging: logging.md
@@ -40,6 +40,7 @@ plugins:
           paths:
           - src
 site_name: Cloudmesh AI Common
+site_url: https://cloudmesh-ai.github.io/cloudmesh-ai-common
 theme:
   name: material
 use_directory_urls: false

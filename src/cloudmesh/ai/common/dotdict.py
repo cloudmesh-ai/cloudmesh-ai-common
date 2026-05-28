@@ -2,10 +2,17 @@
 DotDict provides a dictionary-like object that allows accessing and setting
 nested values using both attribute notation and dot-separated string keys.
 
-Examples:
+DotDict extends OrderedDict to provide a powerful, intuitive interface for
+working with nested configuration data. It supports attribute-style access,
+dot-notation bracket access, automatic conversion of nested dicts, and
+utility methods for expansion, merging, and serialization.
+
+Quick Start:
+    >>> from cloudmesh.ai.common.dotdict import DotDict
     >>> data = {"cloudmesh": {"ai": {"server": "uva"}}}
     >>> config = DotDict(data)
 
+Access Patterns:
     # 1. Attribute access (chaining)
     >>> config.cloudmesh.ai.server
     'uva'
@@ -14,39 +21,147 @@ Examples:
     >>> config["cloudmesh.ai.server"]
     'uva'
 
-    # 3. Dot-notation bracket assignment
+    # 3. Safe access with get() - supports dot-notation and defaults
+    >>> config.get("cloudmesh.ai.server")
+    'uva'
+    >>> config.get("cloudmesh.ai.missing", "default")
+    'default'
+
+    # 4. Smart get - searches recursively for keys
+    >>> config.smart_get("server")
+    'uva'
+
+Assignment Patterns:
+    # 1. Dot-notation bracket assignment - auto-creates nested structures
     >>> config["cloudmesh.ai.port"] = 8000
     >>> config.cloudmesh.ai.port
     8000
 
-    # 4. Nested attribute assignment
+    # 2. Attribute assignment
+    >>> config.version = "2.0"
+    >>> config["version"]
+    '2.0'
+
+    # 3. Nested attribute assignment
     >>> config.new_section = DotDict()
     >>> config.new_section.key = "value"
     >>> config["new_section.key"]
     'value'
 
-    # 5. Dot-notation deletion
+    # 4. Dict values automatically converted to DotDict
+    >>> config["model"] = {"name": "gemma", "size": "7B"}
+    >>> isinstance(config.model, DotDict)
+    True
+
+Deletion and Membership:
+    # 1. Dot-notation deletion
     >>> del config["cloudmesh.ai.server"]
     >>> "server" in config.cloudmesh.ai
     False
 
-    # 6. Expanding placeholders
+    # 2. Attribute deletion
+    >>> del config.version
+    >>> "version" not in config
+    True
+
+    # 3. Membership testing with dot-notation
+    >>> "cloudmesh.ai.port" in config
+    True
+
+Placeholder Expansion:
+    # 1. Expand placeholders using this DotDict's values
     >>> config = DotDict({"name": "gemma", "path": "/models/{name}"})
     >>> expanded = config.expand()
     >>> expanded.path
     '/models/gemma'
 
+    # 2. Recursive expansion - placeholders can reference other placeholders
+    >>> config = DotDict({
+    ...     "base": "/home",
+    ...     "user": "{base}/user",
+    ...     "path": "{user}/models"
+    ... })
+    >>> expanded = config.expand()
+    >>> expanded.path
+    '/home/user/models'
+
+    # 3. Expand external dictionary using this DotDict's values
     >>> data = {"path": "/models/{name}"}
     >>> expanded_external = config.expand(d=data)
     >>> expanded_external["path"]
-    '/models/gemma'
+    '/home/user/models'
 
-    # 7. YAML dump with literal blocks
+Merging Configurations:
+    # 1. Deep merge - nested dicts are merged recursively
+    >>> config = DotDict({"a": {"b": 1}})
+    >>> config.merge({"a": {"c": 2}})
+    >>> config.a.b, config.a.c
+    (1, 2)
+
+    # 2. Standard dicts are automatically converted
+    >>> config.merge({"new_section": {"key": "value"}})
+    >>> isinstance(config.new_section, DotDict)
+    True
+
+Collection Methods with Path Support:
+    # All these methods accept optional path parameter for nested access
+    >>> config = DotDict({"level1": {"level2": {"a": 1, "b": 2}}})
+    
+    >>> list(config.keys("level1.level2"))
+    ['a', 'b']
+    
+    >>> list(config.items("level1.level2"))
+    [('a', 1), ('b', 2)]
+    
+    >>> list(config.values("level1.level2"))
+    [1, 2]
+
+Serialization:
+    # 1. YAML output with literal block style for multi-line strings
     >>> config = DotDict({"script": "line1\nline2"})
     >>> print(config.yaml)
     script: |
       line1
       line2
+
+    # 2. JSON output
+    >>> config = DotDict({"a": {"b": 1}})
+    >>> config.to_json(indent=2)
+    '{
+      "a": {
+        "b": 1
+      }
+    }'
+
+    # 3. Convert to plain dict (recursively)
+    >>> plain = config.to_dict()
+    >>> isinstance(plain, dict) and not isinstance(plain, DotDict)
+    True
+
+    # 4. String representation defaults to YAML
+    >>> repr(config)  # or str(config)
+    'a:\\n  b: 1\\n'
+
+Advanced Features:
+    # 1. Lists containing dicts are recursively converted
+    >>> config = DotDict({"items": [{"name": "a"}, {"name": "b"}]})
+    >>> isinstance(config.items[0], DotDict)
+    True
+
+    # 2. Order is preserved (inherits from OrderedDict)
+    >>> config = DotDict({"z": 1, "a": 2, "m": 3})
+    >>> list(config.keys())
+    ['z', 'a', 'm']
+
+    # 3. Empty initialization and kwargs support
+    >>> config = DotDict(host="localhost", port=8080)
+    >>> config.host, config.port
+    ('localhost', 8080)
+
+    # 4. Mix dict and kwargs
+    >>> config = DotDict({"host": "localhost"}, port=8080)
+    >>> config.host, config.port
+    ('localhost', 8080)
 """
 
 import re
@@ -106,13 +221,19 @@ class DotDict(OrderedDict):
         if not isinstance(data, dict):
             raise TypeError("Data must be a dictionary")
 
+        def _convert_value(v):
+            """Recursively convert dicts to DotDict, including those in lists."""
+            if isinstance(v, dict):
+                return DotDict(v)
+            elif isinstance(v, (list, tuple)):
+                return type(v)(_convert_value(item) for item in v)
+            else:
+                return v
+
         # Recursively convert nested dictionaries to DotDict
         converted_data = OrderedDict()
         for k, v in data.items():
-            if isinstance(v, dict):
-                converted_data[k] = DotDict(v)
-            else:
-                converted_data[k] = v
+            converted_data[k] = _convert_value(v)
 
         super().__init__(converted_data)
         self.update(kwargs)
@@ -124,20 +245,25 @@ class DotDict(OrderedDict):
         Returns:
             str: The YAML representation of the DotDict.
         """
-        # Use a local dumper to avoid polluting global yaml state if possible,
-        # but for simplicity we use the global representer.
-        yaml.add_representer(str, str_presenter)
-        return yaml.dump(self.to_dict(), default_flow_style=False)
+        # Create a local Dumper class to avoid polluting global yaml state
+        class DotDictDumper(yaml.SafeDumper):
+            pass
+        
+        DotDictDumper.add_representer(str, str_presenter)
+        return yaml.dump(self.to_dict(), default_flow_style=False, Dumper=DotDictDumper)
 
-    def expand(self, d=None):
+    def expand(self, d=None, max_iterations=10):
         """Expands placeholders in a dictionary using this DotDict's values.
  
+        Supports recursive expansion where placeholders may contain other placeholders.
         If a value in the target dictionary is a string containing {attribute}, 
         it is replaced by the value of the corresponding attribute found in this DotDict.
  
         Args:
             d (dict, optional): The dictionary to expand. If None, this DotDict 
                 itself is expanded. Defaults to None.
+            max_iterations (int, optional): Maximum iterations for recursive expansion.
+                Prevents infinite loops with circular references. Defaults to 10.
  
         Returns:
             DotDict: A new DotDict with expanded values.
@@ -147,43 +273,79 @@ class DotDict(OrderedDict):
         
         if not isinstance(target, dict):
             raise TypeError("Target to expand must be a dictionary")
- 
+
+        def _expand_value(v, replacements):
+            """Expand a single value using the provided replacements dict."""
+            if isinstance(v, str):
+                result = v
+                for placeholder, replacement in replacements.items():
+                    if placeholder in result:
+                        result = result.replace(placeholder, replacement)
+                return result
+            elif isinstance(v, DotDict):
+                return v.expand(max_iterations=max_iterations)
+            elif isinstance(v, dict):
+                return DotDict(v).expand(max_iterations=max_iterations)
+            elif isinstance(v, (list, tuple)):
+                return type(v)(_expand_value(item, replacements) for item in v)
+            else:
+                return v
+
+        def _build_replacements(source):
+            """Build a dict of {placeholder} -> string value from a source dict."""
+            reps = {}
+            for key in source.keys():
+                val = source[key]
+                if val is not None:
+                    reps[f"{{{key}}}"] = str(val)
+            return reps
+
+        # Build replacements from self (for expanding with this DotDict's values)
+        self_replacements = _build_replacements(self)
+        
+        # Build replacements from target if it's different (local scope expansion)
+        target_replacements = {}
+        if isinstance(target, dict) and target is not self:
+            target_replacements = _build_replacements(target)
+
+        # Start with a copy and convert values
         result = OrderedDict()
+        for k, v in target.items():
+            result[k] = _expand_value(v, {**target_replacements, **self_replacements})
         
-        # Simple expansion: iterate over keys and replace {key} placeholders.
-        # This avoids regex issues with shell variables like ${VAR}.
+        # Perform recursive expansion for nested placeholders
+        # e.g., {a} where a="/path/{b}" and b="value" -> /path/value
+        for _ in range(max_iterations):
+            changed = False
+            
+            # Build new replacements from current result
+            current_replacements = {}
+            for key in self.keys():
+                val = result.get(key)
+                if val is not None and not isinstance(val, (dict, DotDict, list, tuple)):
+                    current_replacements[f"{{{key}}}"] = str(val)
+            
+            # Also include target's own keys for local expansion
+            if target is not self:
+                for key in target.keys():
+                    val = result.get(key)
+                    if val is not None and not isinstance(val, (dict, DotDict, list, tuple)):
+                        current_replacements[f"{{{key}}}"] = str(val)
+            
+            # Apply replacements
+            for k, v in list(result.items()):
+                if isinstance(v, str):
+                    new_v = v
+                    for placeholder, replacement in current_replacements.items():
+                        if placeholder in new_v:
+                            new_v = new_v.replace(placeholder, replacement)
+                    if new_v != v:
+                        result[k] = new_v
+                        changed = True
+            
+            if not changed:
+                break
         
-        # Start with a copy of the target
-        result = OrderedDict(target) if isinstance(target, dict) else OrderedDict()
-        
-        # Iterate over all keys in this DotDict to use as replacement values
-        for key in self.keys():
-            val = self[key]
-            if val is None:
-                continue
-            
-            placeholder = f"{{{key}}}"
-            replacement = str(val)
-            
-            for k, v in result.items():
-                if isinstance(v, str) and placeholder in v:
-                    result[k] = v.replace(placeholder, replacement)
-                    
-        # Also handle cases where the target has keys that should be expanded 
-        # but aren't in 'self' (local scope expansion)
-        if isinstance(target, dict):
-            for key in target.keys():
-                val = target[key]
-                if val is None:
-                    continue
-                
-                placeholder = f"{{{key}}}"
-                replacement = str(val)
-                
-                for k, v in result.items():
-                    if isinstance(v, str) and placeholder in v:
-                        result[k] = v.replace(placeholder, replacement)
-            
         return DotDict(result)
 
     def __getitem__(self, key):
@@ -253,6 +415,74 @@ class DotDict(OrderedDict):
         else:
             super().__delitem__(key)
 
+    def __contains__(self, key):
+        """Checks if a key exists, supporting dot-notation for nested paths.
+
+        Args:
+            key (str): The key to check. If it contains dots, it is treated as a path.
+
+        Returns:
+            bool: True if the key or path exists, False otherwise.
+        """
+        if isinstance(key, str) and "." in key:
+            try:
+                self[key]
+                return True
+            except KeyError:
+                return False
+        return super().__contains__(key)
+
+    def keys(self, path=None):
+        """Returns keys, optionally from a nested path.
+
+        Args:
+            path (str, optional): Dot-notation path to get keys from.
+                If None, returns keys of this dictionary. Defaults to None.
+
+        Returns:
+            KeysView or list: Keys from the specified path or this dictionary.
+        """
+        if path is None:
+            return super().keys()
+        target = self[path]
+        if not isinstance(target, dict):
+            raise TypeError(f"Path '{path}' does not point to a dictionary")
+        return target.keys()
+
+    def items(self, path=None):
+        """Returns items, optionally from a nested path.
+
+        Args:
+            path (str, optional): Dot-notation path to get items from.
+                If None, returns items of this dictionary. Defaults to None.
+
+        Returns:
+            ItemsView or list: Items from the specified path or this dictionary.
+        """
+        if path is None:
+            return super().items()
+        target = self[path]
+        if not isinstance(target, dict):
+            raise TypeError(f"Path '{path}' does not point to a dictionary")
+        return target.items()
+
+    def values(self, path=None):
+        """Returns values, optionally from a nested path.
+
+        Args:
+            path (str, optional): Dot-notation path to get values from.
+                If None, returns values of this dictionary. Defaults to None.
+
+        Returns:
+            ValuesView or list: Values from the specified path or this dictionary.
+        """
+        if path is None:
+            return super().values()
+        target = self[path]
+        if not isinstance(target, dict):
+            raise TypeError(f"Path '{path}' does not point to a dictionary")
+        return target.values()
+
     def __getattr__(self, attr):
         """Returns an element using attribute access.
 
@@ -277,7 +507,11 @@ class DotDict(OrderedDict):
             key (str): The attribute name.
             value (Any): The value to set.
         """
-        self[key] = value
+        # Avoid interfering with Python internals and OrderedDict's private attributes
+        if key.startswith("_"):
+            super().__setattr__(key, value)
+        else:
+            self[key] = value
 
     def __delattr__(self, key):
         """Deletes an attribute, which removes the corresponding dictionary item.

@@ -1,22 +1,21 @@
 ######################################################################
-# Cloudmesh CMMC Makefile
+# Cloudmesh AI Common Makefile
 ######################################################################
 
 # Variables
 PYTHON       := python
 PIP          := $(PYTHON) -m pip
 PACKAGE_NAME := $(shell basename $(CURDIR))
-COMMAND_NAME := cmc
 TWINE        := $(PYTHON) -m twine
 VERSION_FILE := VERSION
 GIT          := git
 PYENVVERSION := $(shell pyenv version-name)
 
-.PHONY: help install clean build test reinstall \ doc view check tag release test-html test-cov setup-test uninstall-all lint typecheck sync doc view
+.PHONY: help install clean build test reinstall doc view check tag release test-html test-cov setup-test uninstall-all lint typecheck sync
 
 help:
 	@echo
-	@echo "Makefile for the CMC CloudmeshCommands:"
+	@echo "Makefile for Cloudmesh AI Common:"
 	@echo
 	@echo "  install       - Install in editable mode for local development"
 	@echo "  reinstall     - Clean and reinstall locally"
@@ -31,8 +30,6 @@ help:
 	@echo "  tag           - Create a git tag based on current version and push"
 	@echo "  release       - Full Production Cycle: upload + tag"
 	@echo "  sync          - Sync changed .py files to remote server"
-	@echo "  doc           - Build documentation locally"
-	@echo "  view          - Preview documentation locally"
 	@echo "  doc           - Build documentation using mkdocs"
 	@echo "  view          - Start documentation server"
 	@echo
@@ -54,7 +51,7 @@ test-html:
 	open .report.html
 
 test-cov:
-	$(PYTHON) -m pytest --cov=cloudmesh.ai.cmc --cov-report=term-missing tests/
+	$(PYTHON) -m pytest --cov=cloudmesh.ai.common --cov-report=term-missing tests/
 
 lint:
 	ruff check src tests
