@@ -253,7 +253,7 @@ class Console(BaseIO, RichConsole):
     def print_table(self, headers: list, data: list, title: Optional[str] = None, expand: bool = False):
         """Prints a formatted table. By default, it is compact (expand=False)."""
         styled_title = f"[bold]{title}[/bold]" if title else None
-        table = Table(title=styled_title, box=box.ROUNDED, expand=expand, header_style="bold")
+        table = Table(title=styled_title, box=box.ROUNDED, expand=expand, header_style="bold", style="black")
         for header in headers:
             table.add_column(header)
         for row in data:

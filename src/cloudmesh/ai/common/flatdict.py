@@ -145,7 +145,7 @@ def key_prefix_replace(d: Dict, prefix: List[str], new_prefix: str = "") -> Dict
         items.append((new_key, v))
     return dict(items)
 
-def flatten(d: Any, parent_key: str = "", sep: str = ".") -> Union[Dict, List]:
+def flatten(d: Any, parent_key: str = "", sep: str = "__") -> Union[Dict, List]:
     """Flattens a multidimensional dict into a one-dimensional dictionary.
 
     Args:
@@ -207,7 +207,7 @@ class FlatDict(dict):
         Returns:
             bool: True if the object is a primitive type, False otherwise.
         """
-        return type(thing) in (int, str, bool, bytes, dict, list)
+        return isinstance(thing, (int, str, bool, bytes, dict, list))
 
     @classmethod
     def _object_to_dict(cls, obj: Any) -> Any:
@@ -221,19 +221,32 @@ class FlatDict(dict):
                 if it is primitive.
         """
         if obj is None:
-            return {}
-        
-        if cls._is_primitive(obj):
-            return obj
+            return None
 
-        if isinstance(obj, list):
+        # Handle lists, tuples, sets first to ensure their elements are converted
+        if isinstance(obj, (list, tuple, set)):
             return [cls._object_to_dict(inst) for inst in obj]
 
-        dict_obj = {}
-        for key in getattr(obj, "__dict__", {}):
-            val = getattr(obj, key)
-            dict_obj[key] = cls._object_to_dict(val)
-        return dict_obj
+        # Handle dict-like objects
+        if isinstance(obj, collections.abc.Mapping):
+            return {k: cls._object_to_dict(v) for k, v in obj.items()}
+
+        # Handle primitive types
+        if isinstance(obj, (int, str, bool, bytes, float)):
+            return obj
+
+        # Handle objects with __dict__
+        if hasattr(obj, "__dict__"):
+            return {k: cls._object_to_dict(v) for k, v in obj.__dict__.items()}
+
+        # Handle objects with __slots__
+        if hasattr(obj, "__slots__"):
+            slots = obj.__slots__
+            if isinstance(slots, str):
+                slots = [slots]
+            return {s: cls._object_to_dict(getattr(obj, s)) for s in slots if hasattr(obj, s)}
+
+        return obj
 
     @classmethod
     def from_object(cls, obj: Any, **kwargs) -> 'FlatDict':
@@ -250,7 +263,7 @@ class FlatDict(dict):
         dict_result = cls._object_to_dict(obj)
         return cls(dict_result, **kwargs)
 
-    def __init__(self, d: Optional[Dict] = None, expand: List[str] = ["os.", "cm.", "cloudmesh."], sep: str = "."):
+    def __init__(self, d: Optional[Dict] = None, expand: List[str] = ["os.", "cm.", "cloudmesh."], sep: str = "__"):
         """Initializes the FlatDict.
 
         Args:
@@ -265,6 +278,11 @@ class FlatDict(dict):
         
         super().__init__(flattened)
         self.sep = sep
+
+    @property
+    def _data(self):
+        """Returns the internal data of the FlatDict."""
+        return self
         
         if "all" in expand:
             self.expand_os = True
@@ -367,7 +385,7 @@ class FlatDict(dict):
         config = read_config_parameters_from_dict(content=content, sep=actual_sep)
         self.update(config)
 
-    def load(self, content: Any = None, expand: bool = True, sep: str = "."):
+    def load(self, content: Any = None, expand: bool = True, sep: str = "__"):
         """Reads in the dict based on the values and types provided.
 
         Args:
@@ -438,7 +456,7 @@ class FlatDict(dict):
         return None
 
 
-def read_config_parameters(filename: str = None, d: str = None, sep: str = ".") -> Dict:
+def read_config_parameters(filename: str = None, d: str = None, sep: str = "__") -> Dict:
     """Reads configuration parameters from a YAML file and produces a flattened dict.
 
     Args:
@@ -458,7 +476,7 @@ def read_config_parameters(filename: str = None, d: str = None, sep: str = ".") 
         config.update(data)
     return flatten(config, sep=sep)
 
-def read_config_parameters_from_string(content: str = None, d: str = None, sep: str = ".") -> Dict:
+def read_config_parameters_from_string(content: str = None, d: str = None, sep: str = "__") -> Dict:
     """Reads configuration parameters from a YAML string and produces a flattened dict.
 
     Args:
@@ -477,7 +495,7 @@ def read_config_parameters_from_string(content: str = None, d: str = None, sep: 
         config.update(data)
     return flatten(config, sep=sep)
 
-def read_config_parameters_from_dict(content: Dict = None, d: str = None, sep: str = ".") -> Dict:
+def read_config_parameters_from_dict(content: Dict = None, d: str = None, sep: str = "__") -> Dict:
     """Reads configuration parameters from a dictionary and produces a flattened dict.
 
     Args:
