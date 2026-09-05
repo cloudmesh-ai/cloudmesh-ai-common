@@ -250,12 +250,13 @@ class Console(BaseIO, RichConsole):
 
         self.print(table)
 
-    def print_table(self, headers: list, data: list, title: Optional[str] = None, expand: bool = False):
+    def print_table(self, headers: list, data: list, title: Optional[str] = None, expand: bool = False, column_align: Optional[Dict[int, str]] = None):
         """Prints a formatted table. By default, it is compact (expand=False)."""
         styled_title = f"[bold]{title}[/bold]" if title else None
         table = Table(title=styled_title, box=box.ROUNDED, expand=expand, header_style="bold", style="black")
-        for header in headers:
-            table.add_column(header)
+        for i, header in enumerate(headers):
+            align = column_align.get(i, "left") if column_align else "left"
+            table.add_column(header, justify=align)
         for row in data:
             table.add_row(*[str(item) for item in row])
         self.print(Align.center(table) if expand else Align.left(table))
